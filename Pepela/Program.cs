@@ -25,6 +25,8 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
+
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto

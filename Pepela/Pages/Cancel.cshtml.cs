@@ -13,7 +13,7 @@ public class CancelModel : PageModel
     private readonly ReservationService _reservationService;
 
     [BindNever] public ReservationCompletionResult Result { get; set; }
-    [BindNever] public string ReservationEmail { get; set; }
+    [BindNever] public string ReservationEmail { get; set; } = string.Empty;
 
     public CancelModel(ReservationService reservationService)
     {

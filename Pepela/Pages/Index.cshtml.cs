@@ -34,7 +34,7 @@ public class IndexModel : PageModel
     {
         InputModel = new ReservationModel()
         {
-            Email = email,
+            Email = email ?? string.Empty,
             Seats = 1
         };
     }

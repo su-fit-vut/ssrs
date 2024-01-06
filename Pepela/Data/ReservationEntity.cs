@@ -23,7 +23,7 @@ public class ReservationEntity
     [Required]
     public int Seats { get; set; }
 
-    [Required] public string Email { get; set; }
+    [Required] public string Email { get; set; } = null!;
 
     public Instant? CancelledOn { get; set; }
     public Instant? ConfirmedOn { get; set; }

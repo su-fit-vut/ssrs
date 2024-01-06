@@ -17,6 +17,14 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
+* {
+  font-family: 'Exo', sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: 'Dosis', sans-serif;
+}
+
+h3 {
+  font-size: 1.5em;
 }

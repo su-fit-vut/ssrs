@@ -30,10 +30,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
-app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
+//app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
 
 app.UseForwardedHeaders();
-app.UsePathBase("/mucha");
+//app.UsePathBase("/mucha");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

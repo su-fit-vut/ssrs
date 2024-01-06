@@ -4,6 +4,10 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>@ViewData["Title"] | Mucha v Kachně | SU FIT VUT</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dosis&family=Exo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
     <link rel="stylesheet" href="~/Pepela.styles.css" asp-append-version="true"/>
@@ -12,25 +16,25 @@
 <header>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
         <div class="container">
-            <a class="navbar-brand" asp-area="" asp-page="/Index">Mucha v Kachně</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <a class="navbar-brand" asp-area="" asp-page="/Index">
+                <img style="max-height: 50px" src="~/logo_horizontalni_1024px.png" alt="Studentská unie FIT VUT v Brně"/>
+            </a>
         </div>
     </nav>
 </header>
 <div class="container">
-    <main role="main" class="pb-3">
+    <main role="main">
         @RenderBody()
     </main>
 </div>
 
+@*
 <footer class="border-top footer text-muted">
     <div class="container">
-        &copy; 2023 <a href="https://su.fit.vut.cz">Studentská unie FIT VUT v Brně</a>
+        &copy; @DateTime.Now.Year <a href="https://su.fit.vut.cz">Studentská unie FIT VUT v Brně</a>
     </div>
 </footer>
+*@
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

@@ -20,8 +20,9 @@
                 @switch (Model.Result)
                 {
                     case ReservationAttemptResult.MustConfirm:
+                        <h3>Rezervace vytvořena</h3>
                         <p>
-                            Rezervace vytvořena. <span style="font-weight:bold;">Potvrď</span>, prosím,
+                            <span style="font-weight:bold;">Potvrď</span>
                             rezervaci kliknutím na odkaz poslaný na zadaný e-mail.
                         </p>
                         <span>
@@ -58,7 +59,7 @@
                         break;
                     case ReservationAttemptResult.Error:
                         <span>
-                            Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (@@i_am_leo) na discordu nebo na
+                            Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (@@i_am_leo_) na discordu nebo na
                             <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
                         </span>
                         break;
@@ -67,17 +68,27 @@
                 }
             </div>
         }
+        
+        <h2 class="mb-4 text-center">Rezervace místa na koncertu Mucha&nbsp;v&nbsp;Kachně</h2>
+
+        <p>
+            Koncert proběhne na otvíračce <span class="fw-bold">ve středu 7. 2. od 18:30</span> ve&nbsp;studentském klubu
+            U&nbsp;Kachničky na FIT VUT.
+        </p>
+        <p>
+            Doporučené vstupné: 150 Kč.<br/>
+            Platí se výhradně v&nbsp;hotovosti na místě.
+        </p>
 
         <form method="post" class="mb-4">
-            <h2 class="mb-4 text-center">Rezervace místa na koncertu Mucha&nbsp;v&nbsp;Kachně</h2>
             <div class="mb-3">
                 <label for="inputEmail" class="form-label">E-mail:</label>
-                <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email">
+                <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email" required="required">
             </div>
             <div class="mb-3">
                 <label for="inputSeats" class="form-label">Počet míst:</label>
                 <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
-                       class="form-control" id="inputSeats">
+                       class="form-control" id="inputSeats" required="required">
             </div>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Vytvořit rezervaci</button>
@@ -85,14 +96,11 @@
         </form>
         
         <p>
-            Koncert proběhne na otvíračce <span class="fw-bold">ve středu 7. 2. od 18:30</span> ve&nbsp;studentském klubu
-            U&nbsp;Kachničky na FIT VUT.<br/>
-            Doporučené vstupné na koncert je 150 Kč. Můžeš však přispět více i&nbsp;méně.<br/>
-            Platí se výhradně v&nbsp;hotovosti na místě.
+            Rezervace tě k&nbsp;ničemu nezavazuje, slouží hlavně ke zjištění zájmu. Do mailu ti přijde odkaz na potvrzení
+            a&nbsp;na zrušení.
         </p>
         <p>
-            Rezervace tě k&nbsp;ničemu nezavazuje, slouží hlavně ke zjištění zájmu. Do mailu ti přijde odkaz na potvrzení
-            a&nbsp;na zrušení. Pokud se ti změní plány, prosím, zruš svou rezervaci.
+            Pokud se ti změní plány, prosím, zruš svou rezervaci.
         </p>
     </div>
 </div>

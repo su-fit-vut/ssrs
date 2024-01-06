@@ -17,4 +17,5 @@ RUN dotnet publish "Pepela.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN rm appsettings.*
 ENTRYPOINT ["dotnet", "Pepela.dll"]

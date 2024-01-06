@@ -22,16 +22,17 @@ builder.Services.AddScoped<LinkService>();
 builder.Services.AddScoped<ReservationService>();
 
 builder.Services.AddRazorPages();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 var app = builder.Build();
 
 app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
+app.UseForwardedHeaders();
 app.UsePathBase("/mucha");
 
 // Configure the HTTP request pipeline.

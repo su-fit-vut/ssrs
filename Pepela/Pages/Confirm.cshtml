@@ -1,0 +1,62 @@
+﻿@page
+@using Pepela.Models
+@using Pepela.Services
+@inject LinkService LinkService
+@model ConfirmModel
+
+@{
+    ViewData["Title"] = "Potvrdit rezervaci";
+}
+
+@switch (Model.Result)
+{
+    case ReservationCompletionResult.Confirmed:
+    case ReservationCompletionResult.AlreadyConfirmed:
+        <h2>Rezervace potvrzena</h2>
+        <p>
+            Rezervace pro @Model.Reservation!.Email.ToLowerInvariant() byla potvrzena.<br/>
+            Zarezervováno míst: @Model.Reservation.Seats
+        </p>
+        <p>
+            Rezervaci je možné zrušit kliknutím <a href="@LinkService.MakeCancelLink(Model.Reservation.Email, Model.Reservation.ManagementToken)">na tento odkaz</a>.
+        </p>
+        break;
+    case ReservationCompletionResult.NoSeatsLeft:
+        <h2>Chyba</h2>
+        <p>
+            Bohužel už není k&nbsp;dispozici dostatečný počet míst.
+            @if (Model.SeatsLeft > 0)
+            {
+                @if (Model.SeatsLeft == 1)
+                {
+                    @:K rezervaci zbývá už jen jedno místo.
+                }
+                else if (Model.SeatsLeft < 5)
+                {
+                    @:K rezervaci zbývají už jen @Model.SeatsLeft místa.
+                }
+                else
+                {
+                    @:K rezervaci zbývá už jen @Model.SeatsLeft míst.
+                }
+            }
+            Je ale možné, že se počet míst ještě bude navyšovat. Sleduj sociální sítě Studentské unie nebo FIT discord!
+        </p>
+        break;
+    case ReservationCompletionResult.NotFound:
+    case ReservationCompletionResult.InvalidToken:
+        <h2>Chyba</h2>
+        <p>
+            Parametry požadavku nejsou správné. Tudy cesta nevede. Zkus adresu z&nbsp;e-mailu zkopírovat ručně. 
+        </p>
+        break;
+    case ReservationCompletionResult.Error:
+        <h2>Chyba</h2>
+        <p>
+            Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (<pre>@@i_am_leo</pre>) na discordu nebo na
+            <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
+        </p>
+        break;
+    default:
+        throw new ArgumentOutOfRangeException();
+}

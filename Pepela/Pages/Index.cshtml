@@ -1,0 +1,98 @@
+﻿@page
+@using Pepela.Models
+@using Microsoft.Extensions.Options
+@using Pepela.Configuration
+@inject IOptionsSnapshot<SeatsOptions> SeatsOptions
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Rezervace";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+
+        @if (Model.Result != null)
+        {
+            var alertClass = Model.Result == ReservationAttemptResult.MustConfirm ? "success" : "warning";
+
+            <div class="alert alert-@alertClass fade show" role="alert">
+                @switch (Model.Result)
+                {
+                    case ReservationAttemptResult.MustConfirm:
+                        <p>
+                            Rezervace vytvořena. <span style="font-weight:bold;">Potvrď</span>, prosím,
+                            rezervaci kliknutím na odkaz poslaný na zadaný e-mail.
+                        </p>
+                        <span>
+                            Nepotvrzené rezervace jsou platné pouze @SeatsOptions.Value.UnconfirmedValidMinutes minut od založení.<br>
+                            Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
+                            Rezervaci můžeš kdykoliv zrušit kliknutím na odkaz v&nbsp;e-mailu.
+                        </span>
+                        break;
+                    case ReservationAttemptResult.NoSeatsLeft:
+                        <span>
+                            Bohužel už není k&nbsp;dispozici dostatečný počet míst.
+                            @if (Model.SeatsLeft > 0)
+                            {
+                                @if (Model.SeatsLeft == 1)
+                                {
+                                    @:K rezervaci zbývá už jen jedno místo.
+                                }
+                                else if (Model.SeatsLeft < 5)
+                                {
+                                    @:K rezervaci zbývají už jen @Model.SeatsLeft místa.
+                                }
+                                else
+                                {
+                                    @:K rezervaci zbývá už jen @Model.SeatsLeft míst.
+                                }
+                            }
+                            Je ale možné, že se počet míst ještě bude navyšovat. Sleduj sociální sítě Studentské unie nebo FIT discord!
+                        </span>
+                        break;
+                    case ReservationAttemptResult.EmailTaken:
+                        <span>
+                            Pro tento e-mail už existuje rezervace. Zrušit ji můžeš kliknutím na odkaz v&nbsp;potvrzovacím e-mailu.
+                        </span>
+                        break;
+                    case ReservationAttemptResult.Error:
+                        <span>
+                            Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (<pre>@@i_am_leo</pre>) na discordu nebo na
+                            <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
+                        </span>
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            </div>
+        }
+
+        <form method="post" class="mb-4">
+            <h2 class="mb-4 text-center">Rezervace místa na koncertu Mucha&nbsp;v&nbsp;Kachně</h2>
+            <div class="mb-3">
+                <label for="inputEmail" class="form-label">E-mail:</label>
+                <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email">
+            </div>
+            <div class="mb-3">
+                <label for="inputSeats" class="form-label">Počet míst:</label>
+                <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
+                       class="form-control" id="inputSeats">
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Vytvořit rezervaci</button>
+            </div>
+        </form>
+        
+        <p>
+            Koncert proběhne na otvíračce <span class="fw-bold">ve středu 7. 2. od 18:30</span> ve&nbsp;studentském klubu
+            U&nbsp;Kachničky na FIT VUT.<br/>
+            Doporučené vstupné na koncert je 150 Kč. Můžeš však přispět více i&nbsp;méně.<br/>
+            Platí se výhradně v&nbsp;hotovosti na místě.
+        </p>
+        <p>
+            Rezervace tě k&nbsp;ničemu nezavazuje, slouží hlavně ke zjištění zájmu. Do mailu ti přijde odkaz na potvrzení
+            a&nbsp;na zrušení. Pokud se ti změní plány, prosím, zruš svou rezervaci.
+        </p>
+    </div>
+</div>

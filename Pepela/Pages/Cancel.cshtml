@@ -1,0 +1,39 @@
+﻿@page
+@using Pepela.Models
+@model Pepela.Pages.CancelModel
+
+@{
+    ViewData["Title"] = "Zrušit rezervaci";
+}
+
+@switch (Model.Result)
+{
+    case ReservationCompletionResult.Confirmed:
+    case ReservationCompletionResult.AlreadyConfirmed:
+        <h2>Rezervace zrušena</h2>
+        <p>
+            Rezervace pro @Model.ReservationEmail byla zrušena.
+        </p>
+        <p>
+            Novou rezervaci můžeš vytvořit <a asp-page="Index" asp-route-email="@Model.ReservationEmail">zde</a>.
+        </p>
+        break;
+        <h2>Chyba</h2>
+    case ReservationCompletionResult.NotFound:
+    case ReservationCompletionResult.InvalidToken:
+        <h2>Chyba</h2>
+        <p>
+            Parametry požadavku nejsou správné. Tudy cesta nevede. Zkus adresu z&nbsp;e-mailu zkopírovat ručně.
+        </p>
+        break;
+    case ReservationCompletionResult.Error:
+        <h2>Chyba</h2>
+        <p>
+            Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (<pre>@@i_am_leo</pre>) na discordu nebo na
+            <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
+        </p>
+        break;
+    case ReservationCompletionResult.NoSeatsLeft:
+    default:
+        throw new ArgumentOutOfRangeException();
+}

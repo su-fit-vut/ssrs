@@ -145,6 +145,8 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
                 await smtp.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.SslOnConnect, ct);
             else if (_options.UseStartTls)
                 await smtp.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.StartTls, ct);
+            else
+                await smtp.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.None, ct);
 
             if (_options is not ({ UserName: null } or { Password: null }))
                 await smtp.AuthenticateAsync(_options.UserName, _options.Password, ct);

@@ -18,7 +18,7 @@
             Zarezervováno míst: @Model.Reservation.Seats
         </p>
         <p>
-            Rezervaci je možné zrušit kliknutím <a href="@LinkService.MakeCancelLink(Model.Reservation.Email, Model.Reservation.ManagementToken)">na tento odkaz</a>.
+            Rezervaci je možné zrušit kliknutím <a href="@LinkService.MakeCancelLink(Model.Reservation.Email.ToLowerInvariant(), Model.Reservation.ManagementToken)">na tento odkaz</a>.
         </p>
         break;
     case ReservationCompletionResult.NoSeatsLeft:

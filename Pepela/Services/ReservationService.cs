@@ -32,6 +32,7 @@ public class ReservationService
     public async Task<ReservationAttemptResult> MakeReservation(ReservationModel model, bool force = false,
         bool mustConfirm = true)
     {
+        var originalMail = model.Email;
         model.Email = model.Email.ToUpperInvariant();
 
         var existing = await _dbContext.Reservations.Where(r => r.Email == model.Email)
@@ -86,9 +87,9 @@ public class ReservationService
 
         if (mustConfirm)
         {
-            await _emailService.SendConfirmationMail(entity.Email,
-                _linkService.MakeConfirmLink(entity.Email, entity.ManagementToken),
-                _linkService.MakeCancelLink(entity.Email, entity.ManagementToken));
+            await _emailService.SendConfirmationMail(originalMail,
+                _linkService.MakeConfirmLink(originalMail, entity.ManagementToken),
+                _linkService.MakeCancelLink(originalMail, entity.ManagementToken));
         }
 
         return ReservationAttemptResult.MustConfirm;
@@ -96,6 +97,7 @@ public class ReservationService
 
     public async Task<ReservationCompletionResult> ConfirmReservation(string email, string? token, bool force = false)
     {
+        var originalMail = email;
         email = email.ToUpperInvariant();
 
         var reservation = await _dbContext.Reservations.Where(r => r.Email == email)
@@ -122,8 +124,8 @@ public class ReservationService
         try
         {
             await _dbContext.SaveChangesAsync();
-            await _emailService.SendDoneMail(reservation.Email, reservation.Seats,
-                _linkService.MakeCancelLink(reservation.Email, reservation.ManagementToken));
+            await _emailService.SendDoneMail(originalMail, reservation.Seats,
+                _linkService.MakeCancelLink(originalMail, reservation.ManagementToken));
         }
         catch (DbUpdateException e)
         {
@@ -137,6 +139,7 @@ public class ReservationService
 
     public async Task<ReservationCompletionResult> CancelReservation(string email, string? token)
     {
+        var originalMail = email;
         email = email.ToUpperInvariant();
 
         var reservation = await _dbContext.Reservations.Where(r => r.Email == email)
@@ -155,7 +158,7 @@ public class ReservationService
         try
         {
             await _dbContext.SaveChangesAsync();
-            await _emailService.SendCancelledEmail(reservation.Email, reservation.Seats, reservation.MadeOn);
+            await _emailService.SendCancelledEmail(originalMail, reservation.Seats, reservation.MadeOn);
         }
         catch (DbUpdateException e)
         {

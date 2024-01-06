@@ -12,10 +12,10 @@
     case ReservationCompletionResult.AlreadyConfirmed:
         <h2>Rezervace zrušena</h2>
         <p>
-            Rezervace pro @Model.ReservationEmail byla zrušena.
+            Rezervace pro @Model.ReservationEmail.ToLowerInvariant() byla zrušena.
         </p>
         <p>
-            Novou rezervaci můžeš vytvořit <a asp-page="Index" asp-route-email="@Model.ReservationEmail">zde</a>.
+            Novou rezervaci můžeš vytvořit <a asp-page="Index" asp-route-email="@Model.ReservationEmail.ToLowerInvariant()">zde</a>.
         </p>
         break;
         <h2>Chyba</h2>

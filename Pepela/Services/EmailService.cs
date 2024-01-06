@@ -96,7 +96,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
     public async Task SendDoneMail(string to, int reservedSeats, string cancelLink)
     {
         var msg = string.Format(DoneMail, reservedSeats, cancelLink);
-        await this.SendAsync("Rezervace potvrzena – Mucha v Kachně", msg, to);
+        await this.SendAsync("Rezervace potvrzena – Mucha v Kachně", msg, to, true);
     }
 
     public async Task SendCancelledEmail(string to, int seats, Instant madeOn)
@@ -113,7 +113,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
         await this.SendAsync("Rezervace zrušena – Mucha v Kachně", msg, to);
     }
 
-    public async Task<bool> SendAsync(string subject, string html, string to, CancellationToken ct = default)
+    public async Task<bool> SendAsync(string subject, string html, string to, bool bcc = false, CancellationToken ct = default)
     {
         // _logger.LogInformation("Message {Sub} to {To}:\n{Html}", subject, to, html);
         //return true;
@@ -130,7 +130,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
             if (!string.IsNullOrEmpty(_options.ReplyTo))
                 mail.ReplyTo.Add(new MailboxAddress(_options.ReplyToDisplayName, _options.ReplyTo));
 
-            if (_options.BccTo != null)
+            if (bcc && _options.BccTo != null)
                 mail.Bcc.Add(MailboxAddress.Parse(_options.BccTo));
 
             // Add Content to Mime Message

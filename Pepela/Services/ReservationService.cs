@@ -3,6 +3,7 @@
 
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using Pepela.Configuration;
@@ -13,18 +14,22 @@ namespace Pepela.Services;
 
 public class ReservationService
 {
+    private const string SeatsLeftCacheKey = "SeatsLeft";
+
     private readonly AppDbContext _dbContext;
     private readonly EmailService _emailService;
     private readonly LinkService _linkService;
+    private readonly IMemoryCache _cache;
     private readonly IOptions<SeatsOptions> _seatsOptions;
     private readonly ILogger<ReservationService> _logger;
 
     public ReservationService(AppDbContext dbContext, EmailService emailService, LinkService linkService,
-        IOptions<SeatsOptions> seatsOptions, ILogger<ReservationService> logger)
+        IMemoryCache cache, IOptions<SeatsOptions> seatsOptions, ILogger<ReservationService> logger)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _linkService = linkService;
+        _cache = cache;
         _seatsOptions = seatsOptions;
         _logger = logger;
     }
@@ -72,6 +77,7 @@ public class ReservationService
         try
         {
             await _dbContext.SaveChangesAsync();
+            _cache.Remove(SeatsLeftCacheKey);
         }
         catch (DbUpdateException e)
         {
@@ -124,6 +130,7 @@ public class ReservationService
         try
         {
             await _dbContext.SaveChangesAsync();
+            _cache.Remove(SeatsLeftCacheKey);
             await _emailService.SendDoneMail(originalMail, reservation.Seats,
                 _linkService.MakeCancelLink(originalMail, reservation.ManagementToken));
         }
@@ -133,7 +140,7 @@ public class ReservationService
 
             return ReservationCompletionResult.Error;
         }
-
+        
         return ReservationCompletionResult.Confirmed;
     }
 
@@ -158,6 +165,7 @@ public class ReservationService
         try
         {
             await _dbContext.SaveChangesAsync();
+            _cache.Remove(SeatsLeftCacheKey);
             await _emailService.SendCancelledEmail(originalMail, reservation.Seats, reservation.MadeOn);
         }
         catch (DbUpdateException e)
@@ -180,8 +188,11 @@ public class ReservationService
         return await _dbContext.Reservations.FirstOrDefaultAsync(r => r.Email == email);
     }
 
-    public async Task<int> GetSeatsLeft()
+    public async Task<int> GetSeatsLeft(bool cached = false)
     {
+        if (cached && _cache.TryGetValue(SeatsLeftCacheKey, out int seatsLeft))
+            return seatsLeft;
+
         var total = await this.GetTotalSeats();
 
         var now = SystemClock.Instance.GetCurrentInstant();
@@ -191,7 +202,12 @@ public class ReservationService
                                         (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
                                     .SumAsync(r => r.Seats);
 
-        return int.Max(0, total - taken);
+        seatsLeft = int.Max(0, total - taken);
+        _cache.Set(SeatsLeftCacheKey, seatsLeft, seatsLeft < 2 
+            ? TimeSpan.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes) 
+            : TimeSpan.FromHours(1));
+
+        return seatsLeft;
     }
 
     private int GetSeatsCountedInReservation(ReservationEntity? entity)

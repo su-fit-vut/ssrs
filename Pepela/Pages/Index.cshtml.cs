@@ -16,7 +16,7 @@ public class IndexModel : PageModel
     private readonly ILogger<IndexModel> _logger;
 
     [BindProperty] public required ReservationModel InputModel { get; set; }
-    [BindNever] public int MaxSeats { get; }
+    [BindNever] public int MaxSeats { get; set; }
     [BindNever] public ReservationAttemptResult? Result { get; set; } = null;
     [BindNever] public int SeatsLeft { get; set; }
 
@@ -30,13 +30,16 @@ public class IndexModel : PageModel
         MaxSeats = seatsOptions.Value.MaximumPerEmail;
     }
 
-    public void OnGet(string? email)
+    public async Task OnGet(string? email)
     {
         InputModel = new ReservationModel()
         {
             Email = email ?? string.Empty,
             Seats = 1
         };
+        
+        SeatsLeft = await _reservationService.GetSeatsLeft(true);
+        MaxSeats = int.Min(SeatsLeft, MaxSeats);
     }
 
     public async Task<IActionResult> OnPost()
@@ -50,9 +53,9 @@ public class IndexModel : PageModel
 
         Result = await _reservationService.MakeReservation(InputModel);
         
-        if (Result == ReservationAttemptResult.NoSeatsLeft)
-            SeatsLeft = await _reservationService.GetSeatsLeft();
-            
+        SeatsLeft = await _reservationService.GetSeatsLeft();
+        MaxSeats = int.Min(SeatsLeft, MaxSeats);
+
         return Page();
     }
 }

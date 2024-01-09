@@ -32,12 +32,19 @@ var app = builder.Build();
 
 //app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
 
-app.UseForwardedHeaders();
-//app.UsePathBase("/mucha");
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
+    app.UseForwardedHeaders();
+    app.UsePathBase("/mucha");
+    
+    // A fugly hack but it works in our environment... 
+    app.Use((context, next) =>
+    {
+        context.Request.Scheme = "https";
+        return next(context);
+    });
+    
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();

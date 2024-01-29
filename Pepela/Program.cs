@@ -32,7 +32,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
-//app.Services.GetRequiredService<AppDbContext>().Database.Migrate();
+var migrateDb = Environment.CommandLine.Contains("--migrate-db");
+if (migrateDb)
+{
+    app.Logger.LogInformation("Migrating database");
+    using var scope = app.Services.CreateScope();
+    using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

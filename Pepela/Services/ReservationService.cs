@@ -2,13 +2,16 @@
 // Author: Ondřej Ondryáš
 
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using Pepela.Configuration;
 using Pepela.Data;
+using Pepela.Jobs;
 using Pepela.Models;
+using Quartz;
 
 namespace Pepela.Services;
 
@@ -19,16 +22,19 @@ public class ReservationService
     private readonly AppDbContext _dbContext;
     private readonly EmailService _emailService;
     private readonly LinkService _linkService;
+    private readonly ISchedulerFactory _schedulerFactory;
     private readonly IMemoryCache _cache;
     private readonly IOptions<SeatsOptions> _seatsOptions;
     private readonly ILogger<ReservationService> _logger;
 
     public ReservationService(AppDbContext dbContext, EmailService emailService, LinkService linkService,
-        IMemoryCache cache, IOptions<SeatsOptions> seatsOptions, ILogger<ReservationService> logger)
+        ISchedulerFactory schedulerFactory, IMemoryCache cache, IOptions<SeatsOptions> seatsOptions,
+        ILogger<ReservationService> logger)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _linkService = linkService;
+        _schedulerFactory = schedulerFactory;
         _cache = cache;
         _seatsOptions = seatsOptions;
         _logger = logger;
@@ -140,7 +146,7 @@ public class ReservationService
 
             return ReservationCompletionResult.Error;
         }
-        
+
         return ReservationCompletionResult.Confirmed;
     }
 
@@ -188,6 +194,67 @@ public class ReservationService
         return await _dbContext.Reservations.FirstOrDefaultAsync(r => r.Email == email);
     }
 
+    public async Task SendReminderEmailToAll(CancellationToken cancellationToken = default)
+    {
+        var reservations = _dbContext.Reservations
+                                     .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
+                                     .AsAsyncEnumerable();
+
+        var scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+
+        await foreach (var reservation in reservations.WithCancellation(cancellationToken))
+        {
+            if (reservation is null or {Email: null} or {ManagementToken: null})
+                continue;
+            
+            try
+            {
+                var link = _linkService.MakeCancelLink(reservation.Email, reservation.ManagementToken);
+                var job = JobBuilder.Create<SendReminderEmailJob>()
+                                    .UsingJobData(new JobDataMap()
+                                    {
+                                        { "email", reservation.Email },
+                                        { "seats", reservation.Seats },
+                                        { "link", link }
+                                    })
+                                    .WithIdentity(reservation.Id.ToString(), "reminder-email")
+                                    .Build();
+
+                var trigger = TriggerBuilder.Create()
+                                            .WithIdentity(reservation.Id.ToString(), "reminder-email")
+                                            .ForJob(job)
+                                            .StartNow()
+                                            .Build();
+
+                await scheduler.ScheduleJob(job, trigger, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Error scheduling reminder mail to {Email}.", reservation.Email);
+            }
+        }
+    }
+
+    public IAsyncEnumerable<ReservationEntity> GetConfirmedReservations()
+    {
+        return _dbContext.Reservations
+                         .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
+                         .AsAsyncEnumerable();
+    }
+
+    public async Task<string> MakeConfirmedReservationsCsv()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("mail;seats");
+
+        await foreach (var reservation in this.GetConfirmedReservations())
+        {
+            sb.AppendLine($"{reservation.Email};{reservation.Seats}");
+        }
+
+        return sb.ToString();
+    }
+
     public async Task<int> GetSeatsLeft(bool cached = false)
     {
         if (cached && _cache.TryGetValue(SeatsLeftCacheKey, out int seatsLeft))
@@ -203,8 +270,8 @@ public class ReservationService
                                     .SumAsync(r => r.Seats);
 
         seatsLeft = int.Max(0, total - taken);
-        _cache.Set(SeatsLeftCacheKey, seatsLeft, seatsLeft < 2 
-            ? TimeSpan.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes) 
+        _cache.Set(SeatsLeftCacheKey, seatsLeft, seatsLeft < 2
+            ? TimeSpan.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
             : TimeSpan.FromHours(1));
 
         return seatsLeft;

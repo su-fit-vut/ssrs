@@ -72,6 +72,40 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
 </p>
 ";
+    
+    private const string ReminderMail = @"
+<h2>Mucha v Kachně</h2>
+<p style=""font-weight: bold;"">středa 7. 2. 2024, 18:30</p>
+<p>
+    Ahoj! Už ve středu nás čeká největší kulturní událost roku, koncert Nikoly Muchy ve studentském klubu U Kachničky na FIT VUT. Bude i překvapení!
+</p>
+
+<h3>Organizační informace</h3>
+<p>
+    Koncert by měl začít cca v 18:30. Kachna bude otevřena od <span style=""font-weight: bold;"">17:00</span>.<br>
+    U vstupu stačí říct e-mail, pro který je rezervace vytvořená.<br>
+    Doporučené vstupné na koncert je 150 Kč, platit lze jen v hotovosti. Pokud budeš mít přesně, budeme převelice šťastní.
+</p>
+<p>
+    Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>.
+    Bez rezervace vstup do klubu nebude umožněn. 
+</p>
+<p>
+    Kachna se nachází v místnosti R212 na FIT VUT. Odemknut by měl být 
+    vchod do budovy P/R <a href=""https://maps.app.goo.gl/v9doZS8uP2tQbLYU9"">pod Kachnou</a>, ke kterému se dostaneš 
+    brankou z ulice Metodějova. Pokud by bylo zamčeno, můžeš zavolat na <a href=""tel:+420541141013"">541 141 013</a>.
+    Dovolujeme si připomenout, že Kachna zavírá ve 21:50. Nad klubem se nachází koleje, dopřejme tedy prosím jejich
+    obyvatelům v noci klid. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty (jakož i v celém areálu fakulty
+    a klubu), to platí i pro elektronické cigarety a obdobné záležitosti. V případě potřeby proto prosím využijte 
+    <a href=""https://maps.app.goo.gl/NRwpXP4ReYYpKEHi7"">prostor před brankou</a>.
+</p>
+<p>
+    <br>Studentská unie FIT VUT v Brně
+    <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
+    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
+nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
+</p>
+";
 
     #endregion
 
@@ -113,10 +147,27 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
         await this.SendAsync("Rezervace zrušena – Mucha v Kachně", msg, to);
     }
 
+    public async Task SendReminderEmail(string to, int seats, string cancelLink)
+    {
+        var seatsStr = seats switch
+        {
+            1 => "jedno místo",
+            < 5 => $"{seats} místa",
+            _ => $"{seats} míst"
+        };
+        
+        var msg = string.Format(ReminderMail, seatsStr, cancelLink);
+        await this.SendAsync("Mucha v Kachně", msg, to);
+    }
+
     public async Task<bool> SendAsync(string subject, string html, string to, bool bcc = false, CancellationToken ct = default)
     {
-        // _logger.LogInformation("Message {Sub} to {To}:\n{Html}", subject, to, html);
-        //return true;
+        if (string.IsNullOrEmpty(_options.Host))
+        {
+            File.WriteAllText($"{to}.html", html);
+            _logger.LogInformation("Message {Sub} to {To}:\n{Html}", subject, to, html);
+            return true;
+        }
         
         try
         {

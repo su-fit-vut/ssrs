@@ -1,0 +1,18 @@
+﻿@page
+@model Pepela.Pages.AdminModel
+
+@{
+    ViewData["Title"] = "Hyperadministrace";
+}
+
+@if (Model.MailSent)
+{
+    <div class="alert alert-primary fade show" role="alert">
+        Naplánoval jsem odeslání spamu!
+    </div>
+}
+<div>
+    <a asp-page-handler="SendMails" asp-page="Admin"
+       onclick="return confirm('Fakt?')">Poslat spam</a><br/>
+    <a asp-page-handler="Csv" asp-page="Admin">Stáhnout seznam platných rezervací</a>
+</div>

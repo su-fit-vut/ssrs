@@ -2,13 +2,13 @@ using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Pepela.Configuration;
 using Pepela.Data;
 using Pepela.Jobs;
 using Pepela.Services;
 using Quartz;
 using Quartz.AspNetCore;
+using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
 
 var builder = WebApplication.CreateBuilder(args);
 

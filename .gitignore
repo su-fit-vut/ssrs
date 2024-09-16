@@ -5,3 +5,7 @@ riderModule.iml
 /_ReSharper.Caches/
 appsettings.json
 appsettings.Development.json
+*.user
+.vs/
+.idea/
+*@*.html

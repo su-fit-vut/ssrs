@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.EntityFrameworkCore;
 using Pepela.Configuration;
 using Pepela.Data;
@@ -11,6 +12,7 @@ using Quartz.AspNetCore;
 using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
 
 var builder = WebApplication.CreateBuilder(args);
+var appOptions = builder.Configuration.GetRequiredSection("App").Get<AppOptions>()!;
 
 // Add services to the container.
 builder.Services.Configure<SeatsOptions>(builder.Configuration.GetRequiredSection("Seats"));
@@ -28,13 +30,18 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<LinkService>();
 builder.Services.AddScoped<ReservationService>();
 
-builder.Services.AddRazorPages();
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
+builder.Services.AddRazorPages()
+       .AddRazorRuntimeCompilation();
+if (!string.IsNullOrWhiteSpace(appOptions.KnownProxyNetwork))
 {
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
-});
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse(appOptions.KnownProxyNetwork),
+            appOptions.KnownProxyPrefixLength));
+    });
+}
 
 // Quartz for e-mail scheduling
 builder.Services.AddScoped<SendReminderEmailJob>();
@@ -43,10 +50,7 @@ builder.Services.AddQuartz(q =>
     q.CheckConfiguration = true;
     q.UseDedicatedThreadPool(10);
 });
-builder.Services.AddQuartzServer(options =>
-{
-    options.WaitForJobsToComplete = true;
-});
+builder.Services.AddQuartzServer(options => { options.WaitForJobsToComplete = true; });
 
 var kisAuthOptions = builder.Configuration.GetRequiredSection("KisAuth").Get<KisAuthOptions>()!;
 builder.Services
@@ -54,10 +58,8 @@ builder.Services
        {
            options.DefaultChallengeScheme = "kis";
            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-       }) 
-       .AddCookie(options =>
-       {
        })
+       .AddCookie(options => { })
        .AddOpenIdConnect("kis", "KIS Auth",
            options =>
            {
@@ -67,11 +69,11 @@ builder.Services
                options.RequireHttpsMetadata = true;
                options.UsePkce = true;
                options.ResponseType = "code";
-               
+
                options.Scope.Clear();
                options.Scope.Add("openid");
                options.Scope.Add("roles");
-               
+
                options.MapInboundClaims = true;
            });
 
@@ -86,18 +88,23 @@ if (migrateDb)
     dbContext.Database.Migrate();
 }
 
+if (!string.IsNullOrWhiteSpace(appOptions.KnownProxyNetwork))
+    app.UseForwardedHeaders();
+
+if (!string.IsNullOrWhiteSpace(appOptions.PathBase))
+    app.UsePathBase(appOptions.PathBase);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseForwardedHeaders();
-    app.UsePathBase("/mucha");
-
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // The default HSTS value is 30 days.
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (appOptions.UseHttpsRedirection)
+    app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();

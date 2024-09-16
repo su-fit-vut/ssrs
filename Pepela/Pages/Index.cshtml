@@ -10,7 +10,7 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-lg-5 col-md-7">
+    <div class="col-10">
         @if (Model.Result != null)
         {
             var alertClass = Model.Result == ReservationAttemptResult.MustConfirm ? "success" : "warning";
@@ -29,6 +29,7 @@
                             Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
                             Rezervaci můžeš kdykoliv zrušit kliknutím na odkaz v&nbsp;e-mailu.
                         </span>
+
                         break;
                     case ReservationAttemptResult.NoSeatsLeft:
                         <span>
@@ -50,21 +51,51 @@
                             }
                             Je ale možné, že se počet míst ještě bude navyšovat. Sleduj sociální sítě Studentské unie nebo FIT discord!
                         </span>
+
+                        break;
+                    case ReservationAttemptResult.NoPubQuizTeamsLeft:
+                        <span>
+                            Bohužel už nejsou k&nbsp;dispozici místa pro pubkvíz.
+                        </span>
+
+                        break;
+                    case ReservationAttemptResult.TimeslotError:
+                        <span>
+                            V&nbsp;jedné ze zvolených únikovek už není místo.
+                        </span>
+
                         break;
                     case ReservationAttemptResult.EmailTaken:
                         <span>
                             Pro tento e-mail už existuje rezervace. Zrušit ji můžeš kliknutím na odkaz v&nbsp;potvrzovacím e-mailu.
                         </span>
+
                         break;
                     case ReservationAttemptResult.Error:
                         <span>
                             Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (@@i_am_leo_) na discordu nebo na
                             <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
                         </span>
+
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+            </div>
+        }
+        else if (!ModelState.IsValid)
+        {
+            <div class="alert alert-danger fade show" role="alert">
+                <h3>Chyba</h3>
+                <p>
+                    @foreach (var value in ModelState.Values)
+                    {
+                        foreach (var error in value.Errors)
+                        {
+                            <span>@error.ErrorMessage</span><br/>
+                        }
+                    }
+                </p>
             </div>
         }
 
@@ -89,43 +120,133 @@
             <h3 class="text-danger text-center">⚠️ Zbývá posledních @Model.SeatsLeft míst ⚠️</h3>
         }
 
-        <h2 class="mb-4 text-center">Rezervace místa na koncertu Mucha&nbsp;v&nbsp;Kachně</h2>
+        <h2 class="mb-4 text-center">Noc na FITu – přihlašovací formulář</h2>
 
         <p>
-            Koncert proběhne na otvíračce <span class="fw-bold">ve středu 7. 2. od 18:30</span> ve&nbsp;studentském klubu
-            U&nbsp;Kachničky na FIT VUT.
+            Noc na FITu proběhne <span class="fw-bold">v&nbsp;pátek 27. 9. od 18:00</span> v&nbsp;prostorách FIT.
+            <br/>Účast je zdarma, pro zjištění zájmu však prosíme o&nbsp;rezervaci místa.
+            <br/>Bez registrace není možné zúčastnit se únikovek a&nbsp;pubkvízu.
         </p>
-        <p>
-            Doporučené vstupné: 150 Kč.<br/>
-            Platí se výhradně v&nbsp;hotovosti na místě.
-        </p>
-
 
         @if (Model.SeatsLeft != 0)
         {
             <form method="post" class="mb-4">
-                <div class="mb-3">
-                    <label for="inputEmail" class="form-label">E-mail:</label>
-                    <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email" required="required">
+                <div class="row mb-3">
+                    <div class="col-8">
+                        <label for="inputEmail" class="form-label">E-mail:</label>
+                        <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email" required="required">
+                    </div>
+                    <div class="col-4">
+                        <label for="inputSeats" class="form-label">Počet míst:</label>
+                        <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
+                               class="form-control" id="inputSeats" required="required">
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="inputSeats" class="form-label">Počet míst:</label>
-                    <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
-                           class="form-control" id="inputSeats" required="required">
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="addSleepover" asp-for="InputModel.SleepOver">
+                    <label class="form-check-label" for="addSleepover">
+                        Chci na FITu přespat
+                    </label>
                 </div>
+                <p class="fw-bold">
+                    Pokud se ti změní plány, prosím, zruš svou rezervaci (linkem v&nbsp;mailu).
+                </p>
+                <hr/>
+
+                <h3>Pubkvíz</h3>
+                @if (Model.PubQuizSeatsLeft == 0)
+                {
+                    <p>
+                        Pubkvíz už je bohužel plný.
+                        Zkus se sem občas mrknout, zda se třeba neuvolnilo nějaké místo.
+                    </p>
+                }
+                else
+                {
+                    <p>
+                        Pro účast na pubkvízu si musíš předem domluvit <b>tým 2–8 lidí</b>. Níže vyplň název a&nbsp;velikost týmu.
+                        <br/><b>Pubkvíz rezervuje pouze jeden z&nbsp;týmu!</b>
+                    </p>
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <label for="inputQuizTeamName" class="form-label">Jméno týmu:</label>
+                            <input type="text" class="form-control"
+                                   id="inputQuizTeamName" asp-for="InputModel.PubQuizTeamName">
+                        </div>
+                        <div class="col-4">
+                            <label for="inputQuizTeamSeats" class="form-label">Počet členů:</label>
+                            <input type="number" class="form-control" min="@SeatsOptions.Value.MinPubQuizTeamSize"
+                                   max="@SeatsOptions.Value.MaxPubQuizTeamSize"
+                                   id="inputQuizTeamSeats" asp-for="InputModel.PubQuizSeats">
+                        </div>
+                    </div>
+                }
+                <hr/>
+
+                <h3>Únikovka AAA</h3>
+                @if (Model.EscapeASlots.TrueForAll(x => !x.IsAvailable))
+                {
+                    <p>
+                        Všechny termíny únikovky jsou bohužel plné.
+                        Zkus se sem občas mrknout, zda se třeba nějaký neuvolnil.
+                    </p>
+                }
+                else
+                {
+                    <p>
+                        Pokud se chceš zúčastnit únikovky AAA, zvol si jeden z termínů níže.
+                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 4–5 lidí</b>.
+                        <br/><b>Únikovku rezervuje pouze jeden z&nbsp;týmu!</b>
+                    </p>
+
+                    <div class="container p-0">
+                        <div class="row">
+                            @foreach (var slot in Model.EscapeASlots)
+                            {
+                                <partial name="_TimeSlotPartial" model="@("InputModel.EscapeASelectedId", slot)"/>
+                            }
+                        </div>
+                    </div>
+                }
+                <hr/>
+
+                <h3>Únikovka BBB</h3>
+                @if (Model.EscapeBSlots.TrueForAll(x => !x.IsAvailable))
+                {
+                    <p>
+                        Všechny termíny únikovky jsou bohužel plné.
+                        Zkus se sem občas mrknout, zda se třeba nějaký neuvolnil.
+                    </p>
+                }
+                else
+                {
+                    <p>
+                        Pokud se chceš zúčastnit únikovky BBB, zvol si jeden z termínů níže.
+                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 3–4 lidí</b>.
+                        <br/><b>Únikovku rezervuje pouze jeden z&nbsp;týmu!</b>
+                    </p>
+
+                    <div class="container p-0">
+                        <div class="row">
+                            @foreach (var slot in Model.EscapeBSlots)
+                            {
+                                <partial name="_TimeSlotPartial" model="@("InputModel.EscapeBSelectedId", slot)"/>
+                            }
+                        </div>
+                    </div>
+                }
+                <hr/>
+
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary">Vytvořit rezervaci</button>
                 </div>
             </form>
 
             <p>
-                Rezervace tě k&nbsp;ničemu nezavazuje, slouží hlavně ke zjištění zájmu. Do mailu ti přijde odkaz na potvrzení
-                a&nbsp;na zrušení.
+                Rezervace tě k&nbsp;ničemu nezavazuje. Do mailu ti přijde odkaz na potvrzení a&nbsp;na zrušení rezervace.
+                Nezapomeň rezervaci potvrdit!
             </p>
         }
-
-        <p>
-            Pokud se ti změní plány, prosím, zruš svou rezervaci.
-        </p>
     </div>
 </div>

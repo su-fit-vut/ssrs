@@ -16,18 +16,21 @@ public class ReservationEntity
 
     [Required] public Instant MadeOn { get; set; }
 
-    [Required]
-    [StringLength(64)]
-    public string ManagementToken { get; set; } = null!;
+    [Required] [StringLength(64)] public string ManagementToken { get; set; } = null!;
 
-    [Required]
-    public int Seats { get; set; }
+    [Required] public int Seats { get; set; }
 
     [Required] public string Email { get; set; } = null!;
 
     public Instant? CancelledOn { get; set; }
     public Instant? ConfirmedOn { get; set; }
 
-    [NotMapped] public bool Cancelled => this.CancelledOn != null;
-    [NotMapped] public bool Confirmed => this.ConfirmedOn != null;
+    public bool SleepOver { get; set; } = false;
+    [MaxLength(32)] public string? PubQuizTeamName { get; set; }
+    public int PubQuizSeats { get; set; }
+    public List<TimeSlotEntity> AssociatedTimeSlots { get; set; } = null!;
+
+    [NotMapped] public bool Cancelled => CancelledOn != null;
+    [NotMapped] public bool Confirmed => ConfirmedOn != null;
+    [NotMapped] public bool HasPubQuizTeam => PubQuizTeamName != null;
 }

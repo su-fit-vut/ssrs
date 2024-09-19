@@ -2,12 +2,14 @@
 // Author: Ondřej Ondryáš
 
 using System.Globalization;
+using System.Text;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using NodaTime;
 using Pepela.Configuration;
+using Pepela.Models;
 
 namespace Pepela.Services;
 
@@ -15,16 +17,23 @@ public class EmailService
 {
     #region Messages
 
+    private const string ExtrasPartial = @"
+<p>
+Součástí tvé rezervace je taky:
+</p>
+<ul>
+{0}
+</ul>
+";
+
     private const string ConfirmationMail = @"
 <h2>Potvrď rezervaci místa</h2>
-<p style=""font-weight: bold;"">Mucha v Kachně, 7. 2. 2024, 18:30</p>
+<p style=""font-weight: bold;"">Noc na FITu, 27. 9. 2024</p>
 <p>
     Díky za rezervaci! Potvrď ji prosím kliknutím na odkaz:<br>
     <a style=""font-weight: bold;"" href=""{0}"">{0}</a>
 </p>
-<p>
-    Doporučené vstupné na koncert je 150 Kč. Můžeš však přispět více i méně.
-</p>
+{3}
 <p>
     Nepotvrzené rezervace jsou platné pouze {1} minut od založení.<br>
     Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
@@ -33,51 +42,50 @@ public class EmailService
 <p>
     <br>Studentská unie FIT VUT v Brně
     <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
+    <br>s případnými dotazy se ozvi na <a href=""mailto:xkucaj01@stud.fit.vut.cz"">xkucaj01@stud.fit.vut.cz</a>
 nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
 </p>
 ";
 
     private const string DoneMail = @"
 <h2>Rezervace potvrzena</h2>
-<p style=""font-weight: bold;"">Mucha v Kachně, 7. 2. 2024, 18:30</p>
+<p style=""font-weight: bold;"">Noc na FITu, 27. 9. 2024</p>
 <p>
     Rezervace je potvrzena! Zarezervováno míst: {0}.<br>
-    Prosím, kdyby se ti změnily plány, zruš rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>, ať máme představu,
-    kolik lidí přijde.
+    Prosím, kdyby se ti změnily plány, zruš rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>.
 </p>
+{2}
 <p>
-    Doporučené vstupné na koncert je 150 Kč. Můžeš však přispět více i méně.<br>
     Budeme se těšit! Zatím se měj pěkně.
 </p>
 <p>
     
     <br>Studentská unie FIT VUT v Brně
     <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
+    <br>s případnými dotazy se ozvi na <a href=""mailto:xkucaj01@stud.fit.vut.cz"">xkucaj01@stud.fit.vut.cz</a>
 nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
 </p>
 ";
 
     private const string CancellationMail = @"
 <h2>Rezervace zrušena</h2>
-<p style=""font-weight: bold;"">Mucha v Kachně, 7. 2. 2024, 18:30</p>
+<p style=""font-weight: bold;"">Noc na FITu, 27. 9. 2024</p>
 <p>
-    Tvá rezervace {1} z {0} byla zrušena.
+    Tvá rezervace {1} z {0} byla zrušena, místo na akci bylo uvolněno.
 </p>
 <p>
     <br>Studentská unie FIT VUT v Brně
     <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
+    <br>s případnými dotazy se ozvi na <a href=""mailto:xkucaj01@stud.fit.vut.cz"">xkucaj01@stud.fit.vut.cz</a>
 nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
 </p>
 ";
-    
+
     private const string ReminderMail = @"
-<h2>Mucha v Kachně</h2>
-<p style=""font-weight: bold;"">středa 7. 2. 2024, 18:30</p>
+<h2>Noc na FITu</h2>
+<p style=""font-weight: bold;"">27. 9. 2024</p>
 <p>
-    Ahoj! Už ve středu nás čeká největší kulturní událost roku, koncert Nikoly Muchy ve studentském klubu U Kachničky na FIT VUT. Bude i překvapení!
+    Ahoj! Už ve pátek nás čeká Noc na FITu.
 </p>
 
 <h3>Organizační informace</h3>
@@ -88,8 +96,8 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 </p>
 <p>
     Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>.
-    Bez rezervace vstup do klubu nebude umožněn. 
 </p>
+{2}
 <p>
     Kachna se nachází v místnosti R212 na FIT VUT. Odemknut by měl být 
     vchod do budovy P/R <a href=""https://maps.app.goo.gl/v9doZS8uP2tQbLYU9"">pod Kachnou</a>, ke kterému se dostaneš 
@@ -102,7 +110,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 <p>
     <br>Studentská unie FIT VUT v Brně
     <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
+    <br>s případnými dotazy se ozvi na <a href=""mailto:xkucaj01@stud.fit.vut.cz"">xkucaj01@stud.fit.vut.cz</a>
 nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
 </p>
 ";
@@ -120,17 +128,39 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
         _logger = logger;
         _options = options.Value;
     }
-
-    public async Task SendConfirmationMail(string to, string confirmLink, string cancelLink)
+    
+    private string MakeExtrasPartial(IEnumerable<TimeSlot>? extras)
     {
-        var msg = string.Format(ConfirmationMail, confirmLink, _seatsOptions.Value.UnconfirmedValidMinutes, cancelLink);
-        await this.SendAsync("Potvrď rezervaci – Mucha v Kachně", msg, to);
+        if (extras == null)
+            return string.Empty;
+        
+        var sb = new StringBuilder();
+        foreach (var extra in extras)
+        {
+            sb.Append($"<li>{extra.ActivityName} ({extra.Start:HH:mm}–{extra.End:HH:mm})");
+            if (extra.Note != null)
+            {
+                sb.Append(", ");
+                sb.Append(extra.Note);
+            }
+
+            sb.AppendLine("</li>");
+        }
+
+        return string.Format(ExtrasPartial, sb);
+    }
+   
+    public async Task SendConfirmationMail(string to, string confirmLink, string cancelLink, IEnumerable<TimeSlot>? extras)
+    {
+        var msg = string.Format(ConfirmationMail, confirmLink, _seatsOptions.Value.UnconfirmedValidMinutes, 
+            cancelLink, this.MakeExtrasPartial(extras));
+        await this.SendAsync("Noc na FITu: Potvrď rezervaci", msg, to);
     }
 
-    public async Task SendDoneMail(string to, int reservedSeats, string cancelLink)
+    public async Task SendDoneMail(string to, int reservedSeats, string cancelLink, IEnumerable<TimeSlot>? extras)
     {
-        var msg = string.Format(DoneMail, reservedSeats, cancelLink);
-        await this.SendAsync("Rezervace potvrzena – Mucha v Kachně", msg, to, true);
+        var msg = string.Format(DoneMail, reservedSeats, cancelLink, this.MakeExtrasPartial(extras));
+        await this.SendAsync("Noc na FITu: Rezervace potvrzena", msg, to, true);
     }
 
     public async Task SendCancelledEmail(string to, int seats, Instant madeOn)
@@ -144,10 +174,10 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
             _ => $"{seats} míst"
         };
         var msg = string.Format(CancellationMail, madeOnStr, seatsStr);
-        await this.SendAsync("Rezervace zrušena – Mucha v Kachně", msg, to);
+        await this.SendAsync("Noc na FITu: Rezervace zrušena", msg, to);
     }
 
-    public async Task SendReminderEmail(string to, int seats, string cancelLink)
+    public async Task SendReminderEmail(string to, int seats, string cancelLink, IEnumerable<TimeSlot>? extras)
     {
         var seatsStr = seats switch
         {
@@ -155,20 +185,22 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
             < 5 => $"{seats} místa",
             _ => $"{seats} míst"
         };
-        
-        var msg = string.Format(ReminderMail, seatsStr, cancelLink);
-        await this.SendAsync("Mucha v Kachně", msg, to);
+
+        var msg = string.Format(ReminderMail, seatsStr, cancelLink, this.MakeExtrasPartial(extras));
+        await this.SendAsync("Noc na FITu", msg, to);
     }
 
-    public async Task<bool> SendAsync(string subject, string html, string to, bool bcc = false, CancellationToken ct = default)
+    private async Task<bool> SendAsync(string subject, string html, string to, bool bcc = false,
+        CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(_options.Host))
         {
-            File.WriteAllText($"{to}.html", html);
+            await File.WriteAllTextAsync($"{to}.html", html, ct);
             _logger.LogInformation("Message {Sub} to {To}:\n{Html}", subject, to, html);
+
             return true;
         }
-        
+
         try
         {
             // Initialize a new instance of the MimeKit.MimeMessage class

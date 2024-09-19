@@ -136,7 +136,8 @@ public class ReservationService
         {
             await _emailService.SendConfirmationMail(originalMail,
                 _linkService.MakeConfirmLink(originalMail, entity.ManagementToken),
-                _linkService.MakeCancelLink(originalMail, entity.ManagementToken));
+                _linkService.MakeCancelLink(originalMail, entity.ManagementToken),
+                this.GetEmailExtras(entity));
         }
 
         return ReservationAttemptResult.MustConfirm;
@@ -181,7 +182,8 @@ public class ReservationService
             await _dbContext.SaveChangesAsync();
             _cache.Remove(SeatsLeftCacheKey);
             await _emailService.SendDoneMail(originalMail, reservation.Seats,
-                _linkService.MakeCancelLink(originalMail, reservation.ManagementToken));
+                _linkService.MakeCancelLink(originalMail, reservation.ManagementToken),
+                this.GetEmailExtras(reservation));
         }
         catch (DbUpdateException e)
         {
@@ -471,6 +473,42 @@ public class ReservationService
         }).ToListAsync();
     }
 
+    private IEnumerable<TimeSlot> GetEmailExtras(ReservationEntity reservationEntity)
+    {
+        var extras = reservationEntity.AssociatedTimeSlots
+                                      .Select(x => this.ToModel(x, 0));
+        if (reservationEntity.PubQuizTeamName != null)
+        {
+            var pubQuizTimeSlot = new TimeSlot()
+            {
+                Id = -1,
+                Start = Instant.FromUtc(2024, 9, 27, 17, 0).InZone(_zone),
+                End = Instant.FromUtc(2024, 9, 27, 22, 0).InZone(_zone),
+                ActivityName = "Pubkvíz",
+                Note = $"Tým {reservationEntity.PubQuizTeamName}",
+                TotalSeats = -1, AlwaysConsumeOnePerReservation = false, AvailableSeats = -1
+            };
+            extras = extras.Append(pubQuizTimeSlot);
+        }
+
+        return extras;
+    }
+
+    private TimeSlot ToModel(TimeSlotEntity slotEntity, int availableSeats)
+    {
+        return new TimeSlot()
+        {
+            Id = slotEntity.Id,
+            Start = slotEntity.Start.InZone(_zone),
+            End = slotEntity.End.InZone(_zone),
+            ActivityName = slotEntity.Activity.Name,
+            TotalSeats = slotEntity.TotalSeats,
+            AvailableSeats = availableSeats,
+            Note = slotEntity.Note,
+            AlwaysConsumeOnePerReservation = slotEntity.AlwaysConsumeOnePerReservation
+        };
+    }
+
     public async Task<List<TimeSlot>> GetTimeslotsForActivity(int slottedActivityId)
     {
         var slots = await _dbContext.TimeSlots
@@ -491,18 +529,7 @@ public class ReservationService
                                 (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
                             .Sum(x => slotEntity.AlwaysConsumeOnePerReservation ? 1 : x.Seats);
 
-            var slotModel = new TimeSlot()
-            {
-                Id = slotEntity.Id,
-                Start = slotEntity.Start.InZone(_zone),
-                End = slotEntity.End.InZone(_zone),
-                ActivityName = slotEntity.Activity.Name,
-                TotalSeats = slotEntity.TotalSeats,
-                AvailableSeats = availableSeats,
-                Note = slotEntity.Note,
-                AlwaysConsumeOnePerReservation = slotEntity.AlwaysConsumeOnePerReservation
-            };
-
+            var slotModel = this.ToModel(slotEntity, availableSeats);
             ret.Add(slotModel);
         }
 

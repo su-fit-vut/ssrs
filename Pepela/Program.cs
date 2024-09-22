@@ -1,7 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.EntityFrameworkCore;
 using Pepela.Configuration;
 using Pepela.Data;
@@ -49,6 +48,12 @@ builder.Services.AddQuartz(q =>
 {
     q.CheckConfiguration = true;
     q.UseDedicatedThreadPool(10);
+    q.UsePersistentStore(store =>
+    {
+        store.UseProperties = false;
+        store.UsePostgres(builder.Configuration.GetConnectionString("AppDb")!);
+        store.UseSystemTextJsonSerializer();
+    });
 });
 builder.Services.AddQuartzServer(options => { options.WaitForJobsToComplete = true; });
 

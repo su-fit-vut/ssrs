@@ -1,6 +1,7 @@
 ﻿// SendReminderEmailJob.cs
 // Author: Ondřej Ondryáš
 
+using Pepela.Models;
 using Pepela.Services;
 using Quartz;
 
@@ -30,7 +31,8 @@ public class SendReminderEmailJob : IJob
         var to = data.GetString("email") ?? throw new JobExecutionException();
         var seats = data.GetIntValue("seats");
         var cancelLink = data.GetString("link") ?? throw new JobExecutionException();
+        var timeSlots = data.Get("timeSlots") as List<TimeSlot>;
 
-        await _emailService.SendReminderEmail(to, seats, cancelLink);
+        await _emailService.SendReminderEmail(to, seats, cancelLink, timeSlots);
     }
 }

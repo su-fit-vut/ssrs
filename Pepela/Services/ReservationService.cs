@@ -262,7 +262,8 @@ public class ReservationService
                                     {
                                         { "email", reservation.Email },
                                         { "seats", reservation.Seats },
-                                        { "link", link }
+                                        { "link", link },
+                                        { "timeSlots", this.GetEmailExtras(reservation) }
                                     })
                                     .WithIdentity(reservation.Id.ToString(), "reminder-email")
                                     .Build();

@@ -1,7 +1,9 @@
+using System.Data.Common;
 using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Pepela.Configuration;
 using Pepela.Data;
 using Pepela.Jobs;
@@ -19,6 +21,31 @@ builder.Services.Configure<MailOptions>(builder.Configuration.GetRequiredSection
 // builder.Services.Configure<LinkGenerationOptions>(builder.Configuration.GetRequiredSection("Links"));
 
 builder.Services.AddHttpContextAccessor();
+
+// Quartz for e-mail scheduling
+builder.Services.AddScoped<SendReminderEmailJob>();
+builder.Services.AddSingleton<DbDataSource, NpgsqlDataSource>(sp =>
+{
+    var npgsqlBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("AppDb"));
+    npgsqlBuilder.UseNodaTime();
+    return npgsqlBuilder.Build();
+});
+
+builder.Services.AddQuartz(q =>
+{
+    q.CheckConfiguration = true;
+    q.UseDedicatedThreadPool(10);
+    q.AddDataSourceProvider();
+    q.UsePersistentStore(store =>
+    {
+        store.UseProperties = false;
+
+        store.UsePostgres(ado => { ado.UseDataSourceConnectionProvider(); });
+        store.UseSystemTextJsonSerializer();
+    });
+});
+builder.Services.AddQuartzServer(options => { options.WaitForJobsToComplete = true; });
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("AppDb"),
@@ -30,7 +57,7 @@ builder.Services.AddScoped<LinkService>();
 builder.Services.AddScoped<ReservationService>();
 
 builder.Services.AddRazorPages()
-       .AddRazorRuntimeCompilation();
+    .AddRazorRuntimeCompilation();
 if (!string.IsNullOrWhiteSpace(appOptions.KnownProxyNetwork))
 {
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -42,45 +69,30 @@ if (!string.IsNullOrWhiteSpace(appOptions.KnownProxyNetwork))
     });
 }
 
-// Quartz for e-mail scheduling
-builder.Services.AddScoped<SendReminderEmailJob>();
-builder.Services.AddQuartz(q =>
-{
-    q.CheckConfiguration = true;
-    q.UseDedicatedThreadPool(10);
-    q.UsePersistentStore(store =>
-    {
-        store.UseProperties = false;
-        store.UsePostgres(builder.Configuration.GetConnectionString("AppDb")!);
-        store.UseSystemTextJsonSerializer();
-    });
-});
-builder.Services.AddQuartzServer(options => { options.WaitForJobsToComplete = true; });
-
 var kisAuthOptions = builder.Configuration.GetRequiredSection("KisAuth").Get<KisAuthOptions>()!;
 builder.Services
-       .AddAuthentication(options =>
-       {
-           options.DefaultChallengeScheme = "kis";
-           options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-       })
-       .AddCookie(options => { })
-       .AddOpenIdConnect("kis", "KIS Auth",
-           options =>
-           {
-               options.Authority = kisAuthOptions.Authority;
-               options.ClientId = kisAuthOptions.ClientId;
-               options.ClientSecret = kisAuthOptions.ClientSecret;
-               options.RequireHttpsMetadata = true;
-               options.UsePkce = true;
-               options.ResponseType = "code";
+    .AddAuthentication(options =>
+    {
+        options.DefaultChallengeScheme = "kis";
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(options => { })
+    .AddOpenIdConnect("kis", "KIS Auth",
+        options =>
+        {
+            options.Authority = kisAuthOptions.Authority;
+            options.ClientId = kisAuthOptions.ClientId;
+            options.ClientSecret = kisAuthOptions.ClientSecret;
+            options.RequireHttpsMetadata = true;
+            options.UsePkce = true;
+            options.ResponseType = "code";
 
-               options.Scope.Clear();
-               options.Scope.Add("openid");
-               options.Scope.Add("roles");
+            options.Scope.Clear();
+            options.Scope.Add("openid");
+            options.Scope.Add("roles");
 
-               options.MapInboundClaims = true;
-           });
+            options.MapInboundClaims = true;
+        });
 
 var app = builder.Build();
 

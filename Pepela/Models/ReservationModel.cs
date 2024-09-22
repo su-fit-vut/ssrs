@@ -20,6 +20,8 @@ public class ReservationModel
 
     [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
     public int? PubQuizSeats { get; set; }
+    
+    public bool PubQuizSolo { get; set; }
 
     [BindProperty] public int? EscapeASelectedId { get; set; }
     [BindProperty] public int? EscapeBSelectedId { get; set; }

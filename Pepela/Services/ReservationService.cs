@@ -92,9 +92,9 @@ public class ReservationService
                 !await this.CheckSlotSeatsLeftForReservation(model.EscapeBSelectedId.Value, existing, model.Seats))
                 return await GetTimeslotErrorResult(model.EscapeBSelectedId.Value);
 
-            if (model.PubQuizTeamName != null)
+            if (model.PubQuizTeamName != null || model.PubQuizSolo)
             {
-                var quizSlotId = model.PubQuizSeats == 1 ? PubQuizSoloTimeSlotId : PubQuizTeamsTimeSlotId;
+                var quizSlotId = (model.PubQuizSolo || model.PubQuizSeats == 1) ? PubQuizSoloTimeSlotId : PubQuizTeamsTimeSlotId;
                 if (!await this.CheckSlotSeatsLeftForReservation(quizSlotId, existing, model.Seats))
                     return await GetTimeslotErrorResult(quizSlotId);
             }
@@ -128,7 +128,7 @@ public class ReservationService
         if (model.PubQuizTeamName != null)
         {
             model.PubQuizSeats ??= _seatsOptions.Value.MinPubQuizTeamSize;
-            if (model.PubQuizSeats == 1)
+            if (model.PubQuizSeats == 1 || model.PubQuizSolo)
                 AddSlotEntity(PubQuizSoloTimeSlotId);
             else
                 AddSlotEntity(PubQuizTeamsTimeSlotId);

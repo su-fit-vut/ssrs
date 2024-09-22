@@ -181,8 +181,9 @@
                         Pozor, bude zarezervováno pouze jedno „sólo“ místo nehledě na počet osob v&nbsp;rezervaci.
                     </p>
                     <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizTeamName">
+                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizSolo">
                         <input type="hidden" asp-for="InputModel.PubQuizSeats" value="1">
+                        <input type="hidden" asp-for="InputModel.PubQuizTeamName" value="solo">
                         <label class="form-check-label" for="reserveQuizSoloSeat">
                             Zarezervovat místo na pubkvízu
                         </label>

@@ -2,6 +2,7 @@
 @using Pepela.Models
 @using Microsoft.Extensions.Options
 @using Pepela.Configuration
+@using Pepela.Services
 @inject IOptionsSnapshot<SeatsOptions> SeatsOptions
 @model IndexModel
 
@@ -13,12 +14,12 @@
     <div class="col-10">
         @if (Model.Result != null)
         {
-            var alertClass = Model.Result == ReservationAttemptResult.MustConfirm ? "success" : "warning";
+            var alertClass = Model.Result?.Code == ReservationAttemptResultCode.MustConfirm ? "success" : "warning";
 
             <div class="alert alert-@alertClass fade show" role="alert">
-                @switch (Model.Result)
+                @switch (Model.Result?.Code)
                 {
-                    case ReservationAttemptResult.MustConfirm:
+                    case ReservationAttemptResultCode.MustConfirm:
                         <h3>Rezervace vytvořena</h3>
                         <p>
                             <span style="font-weight:bold;">Potvrď</span>
@@ -31,7 +32,7 @@
                         </span>
 
                         break;
-                    case ReservationAttemptResult.NoSeatsLeft:
+                    case ReservationAttemptResultCode.NoSeatsLeft:
                         <span>
                             Bohužel už není k&nbsp;dispozici dostatečný počet míst.
                             @if (Model.SeatsLeft > 0)
@@ -53,25 +54,35 @@
                         </span>
 
                         break;
-                    case ReservationAttemptResult.NoPubQuizTeamsLeft:
-                        <span>
-                            Bohužel už nejsou k&nbsp;dispozici místa pro pubkvíz.
-                        </span>
+                    case ReservationAttemptResultCode.TimeslotError:
+                        var slotId = Model.Result?.CollidingTimeSlot?.Id ?? -1;
+                        if (slotId == ReservationService.PubQuizTeamsTimeSlotId)
+                        {
+                            <span>
+                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro další týmy.
+                            </span>
+                        }
+                        else if (slotId == ReservationService.PubQuizSoloTimeSlotId)
+                        {
+                            <span>
+                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro lidi bez týmu.
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                Ve zvolené únikovce @Model.Result?.CollidingTimeSlot?.ActivityName už bohužel není místo.
+                            </span>
+                        }
 
                         break;
-                    case ReservationAttemptResult.TimeslotError:
-                        <span>
-                            V&nbsp;jedné ze zvolených únikovek už není místo.
-                        </span>
-
-                        break;
-                    case ReservationAttemptResult.EmailTaken:
+                    case ReservationAttemptResultCode.EmailTaken:
                         <span>
                             Pro tento e-mail už existuje rezervace. Zrušit ji můžeš kliknutím na odkaz v&nbsp;potvrzovacím e-mailu.
                         </span>
 
                         break;
-                    case ReservationAttemptResult.Error:
+                    case ReservationAttemptResultCode.Error:
                         <span>
                             Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (@@i_am_leo_) na discordu nebo na
                             <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
@@ -92,7 +103,8 @@
                     {
                         foreach (var error in value.Errors)
                         {
-                            <span>@error.ErrorMessage</span><br/>
+                            <span>@error.ErrorMessage</span>
+                            <br/>
                         }
                     }
                 </p>
@@ -155,18 +167,42 @@
                 <hr/>
 
                 <h3>Pubkvíz</h3>
-                @if (Model.PubQuizSeatsLeft == 0)
+                @if (!Model.PubQuizTeamsAvailable && !Model.PubQuizSoloAvailable)
                 {
                     <p>
                         Pubkvíz už je bohužel plný.
                         Zkus se sem občas mrknout, zda se třeba neuvolnilo nějaké místo.
                     </p>
                 }
+                else if (!Model.PubQuizTeamsAvailable && Model.PubQuizSoloAvailable)
+                {
+                    <p>
+                        Do pubkvízu už je možné rezervovat pouze místa pro jednotlivce (bez týmu).
+                        Pozor, bude zarezervováno pouze jedno „sólo“ místo nehledě na počet osob v&nbsp;rezervaci.
+                    </p>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizTeamName">
+                        <input type="hidden" asp-for="InputModel.PubQuizSeats" value="1">
+                        <label class="form-check-label" for="reserveQuizSoloSeat">
+                            Zarezervovat místo na pubkvízu
+                        </label>
+                    </div>
+                }
                 else
                 {
                     <p>
-                        Pro účast na pubkvízu si musíš předem domluvit <b>tým 2–8 lidí</b>. Níže vyplň název a&nbsp;velikost týmu.
+                        Pro účast na pubkvízu si nejlépe předem domluv <b>tým 2–8 lidí</b>. Níže vyplň název a&nbsp;velikost týmu.
                         <br/><b>Pubkvíz rezervuje pouze jeden z&nbsp;týmu!</b>
+                        @if (Model.PubQuizSoloAvailable)
+                        {
+                            <br/>
+                            <span>
+                                Pokud nemáš tým, <b>vyplň libovolné neprázdné jméno týmu</b> a&nbsp;jako počet členů zvol <b>1</b>.
+                                Na místě z&nbsp;vás pak tým poskládáme
+                                (pozor, v&nbsp;takovém případě bude zarezervováno pouze jedno „sólo“ místo nehledě
+                                na počet osob v&nbsp;rezervaci).
+                            </span>
+                        }
                     </p>
                     <div class="row mb-3">
                         <div class="col-8">
@@ -176,7 +212,7 @@
                         </div>
                         <div class="col-4">
                             <label for="inputQuizTeamSeats" class="form-label">Počet členů:</label>
-                            <input type="number" class="form-control" min="@SeatsOptions.Value.MinPubQuizTeamSize"
+                            <input type="number" class="form-control" min="@Model.MinPubQuizTeamSize"
                                    max="@SeatsOptions.Value.MaxPubQuizTeamSize"
                                    id="inputQuizTeamSeats" asp-for="InputModel.PubQuizSeats">
                         </div>
@@ -184,7 +220,7 @@
                 }
                 <hr/>
 
-                <h3>Únikovka AAA</h3>
+                <h3>Únikovka „Prokletý vinný sklep“</h3>
                 @if (Model.EscapeASlots.TrueForAll(x => !x.IsAvailable))
                 {
                     <p>
@@ -194,9 +230,14 @@
                 }
                 else
                 {
+                    <p style="font-style: italic;">
+                        Duch kdysi zesnulého vinaře straší ve sklepení rodinného vinařství. Objevil se před nedávnem a jednou za čas škodí.
+                        Rodina se jej snaží zahnat, ale není jak. Po poskládání a přečtení kouzelné zprávy bude duch zahnán a vinný sklep bude odproštěn od prokletí.
+                    </p>
                     <p>
-                        Pokud se chceš zúčastnit únikovky AAA, zvol si jeden z termínů níže.
-                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 4–5 lidí</b>.
+                        Pokud se chceš zúčastnit únikovky Prokletý vinný sklep (místnost <a href="https://www.fit.vut.cz/fit/map/-1/.cs?show=C008&big=1">C008</a>),
+                        zvol si jeden z termínů níže.
+                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 3–4 lidí</b>.
                         <br/><b>Únikovku rezervuje pouze jeden z&nbsp;týmu!</b>
                     </p>
 
@@ -211,7 +252,7 @@
                 }
                 <hr/>
 
-                <h3>Únikovka BBB</h3>
+                <h3>Únikovka „Kafkovo prokletí“</h3>
                 @if (Model.EscapeBSlots.TrueForAll(x => !x.IsAvailable))
                 {
                     <p>
@@ -221,9 +262,16 @@
                 }
                 else
                 {
+                    <p style="font-style: italic;">
+                        Milý deníčku.
+                        Píše se 22. května 1924 a&nbsp;právě jsem úspěšně dokončil experiment. Je to velký posun ve vědě.
+                        Lidé se mohou konečně proměňovat v&nbsp;hmyz! Jaká to krása!
+                        Ale jsem sotva v&nbsp;půlce cesty. Je třeba přijít i&nbsp;s&nbsp;nápojem na proměnu zpět.
+                        Ale jen tak jim jej nedám. Nechť si jej zaslouží.
+                    </p>
                     <p>
-                        Pokud se chceš zúčastnit únikovky BBB, zvol si jeden z termínů níže.
-                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 3–4 lidí</b>.
+                        Pokud se chceš zúčastnit únikovky Kafkovo prokletí (venkovní prostor „bednárny“ za chodbou <a href="https://www.fit.vut.cz/fit/map/.cs?show=A104&big=1">A104</a>), zvol si jeden z termínů níže.
+                        <br/>Pro účast na únikovce si musíš předem domluvit <b>tým 4–5 lidí</b>.
                         <br/><b>Únikovku rezervuje pouze jeden z&nbsp;týmu!</b>
                     </p>
 

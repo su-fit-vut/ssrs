@@ -23,7 +23,13 @@ public class IndexModel : PageModel
     [BindNever] public int SeatsLeft { get; set; }
     [BindNever] public List<TimeSlot> EscapeASlots { get; set; } = null!;
     [BindNever] public List<TimeSlot> EscapeBSlots { get; set; } = null!;
-    [BindNever] public int PubQuizSeatsLeft { get; set; }
+
+    [BindNever] public bool PubQuizTeamsAvailable { get; set; }
+    [BindNever] public bool PubQuizSoloAvailable { get; set; }
+
+    [BindNever]
+    public int MinPubQuizTeamSize =>
+        PubQuizSoloAvailable ? 1 : (PubQuizTeamsAvailable ? _seatsOptions.Value.MinPubQuizTeamSize : 2);
 
     public IndexModel(ReservationService reservationService, IOptionsSnapshot<SeatsOptions> seatsOptions,
         ILogger<IndexModel> logger)
@@ -52,12 +58,22 @@ public class IndexModel : PageModel
             ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.Seats)}",
                 "Neplatný počet rezervovaných míst.");
 
-        if (!string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName) && (InputModel.PubQuizSeats is null
-                || InputModel.PubQuizSeats < _seatsOptions.Value.MinPubQuizTeamSize
-                || InputModel.PubQuizSeats > _seatsOptions.Value.MaxPubQuizTeamSize))
+        var pubQuizOk = true;
+        if (!string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName))
+        {
+            if (InputModel.PubQuizSeats is null)
+                pubQuizOk = false;
+
+            (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability(false);
+            if (InputModel.PubQuizSeats < MinPubQuizTeamSize
+                || InputModel.PubQuizSeats > _seatsOptions.Value.MaxPubQuizTeamSize)
+                pubQuizOk = false;
+        }
+
+        if (!pubQuizOk)
             ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
                 "Neplatný počet členů týmu pro pubkvíz.");
-        
+
         if (string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName) && InputModel.PubQuizSeats is not (null or 0))
             ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
                 "Musíte zadat jméno týmu pro pubkvíz.");
@@ -78,7 +94,7 @@ public class IndexModel : PageModel
     {
         SeatsLeft = await _reservationService.GetSeatsLeft(true);
         MaxSeats = int.Min(SeatsLeft, MaxSeats);
-        PubQuizSeatsLeft = await _reservationService.GetPubQuizTeamsLeft(true);
+        (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability(true);
         EscapeASlots = await _reservationService.GetTimeslotsForActivity(1);
         EscapeBSlots = await _reservationService.GetTimeslotsForActivity(2);
     }

@@ -18,5 +18,6 @@ public class TimeSlotEntity
     [Required] public int ActivityId { get; set; }
     public SlottedActivityEntity Activity { get; set; } = null!;
     public List<ReservationEntity> AssociatedReservations { get; set; } = null!;
+    public List<ReservationTimeSlotAssociation> ReservationAssociations { get; set; } = null!;
     public bool AlwaysConsumeOnePerReservation { get; set; } = true;
 }

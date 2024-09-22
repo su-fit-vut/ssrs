@@ -8,10 +8,10 @@
     ViewData["Title"] = "Potvrdit rezervaci";
 }
 
-@switch (Model.Result)
+@switch (Model.Result.Code)
 {
-    case ReservationCompletionResult.Confirmed:
-    case ReservationCompletionResult.AlreadyConfirmed:
+    case ReservationCompletionResultCode.Confirmed:
+    case ReservationCompletionResultCode.AlreadyConfirmed:
         <h2>Rezervace potvrzena</h2>
         <p>
             Rezervace pro @Model.Reservation!.Email.ToLowerInvariant() byla potvrzena.<br/>
@@ -21,7 +21,7 @@
             Rezervaci je možné zrušit kliknutím <a href="@LinkService.MakeCancelLink(Model.Reservation.Email.ToLowerInvariant(), Model.Reservation.ManagementToken)">na tento odkaz</a>.
         </p>
         break;
-    case ReservationCompletionResult.NoSeatsLeft:
+    case ReservationCompletionResultCode.NoSeatsLeft:
         <h2>Chyba</h2>
         <p>
             Bohužel už není k&nbsp;dispozici dostatečný počet míst.
@@ -43,14 +43,14 @@
             Je ale možné, že se počet míst ještě bude navyšovat. Sleduj sociální sítě Studentské unie nebo FIT discord!
         </p>
         break;
-    case ReservationCompletionResult.NotFound:
-    case ReservationCompletionResult.InvalidToken:
+    case ReservationCompletionResultCode.NotFound:
+    case ReservationCompletionResultCode.InvalidToken:
         <h2>Chyba</h2>
         <p>
             Parametry požadavku nejsou správné. Tudy cesta nevede. Zkus adresu z&nbsp;e-mailu zkopírovat ručně. 
         </p>
         break;
-    case ReservationCompletionResult.Error:
+    case ReservationCompletionResultCode.Error:
         <h2>Chyba</h2>
         <p>
             Vyskytla se neočekávaná chyba. Dej prosím vědět LeOvi (@@i_am_leo_) na discordu nebo na

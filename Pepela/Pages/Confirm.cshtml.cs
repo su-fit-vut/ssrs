@@ -32,7 +32,7 @@ public class ConfirmModel : PageModel
         }
 
         Result = await _reservationService.ConfirmReservation(email, token);
-        if (Result is ReservationCompletionResult.Confirmed or ReservationCompletionResult.AlreadyConfirmed)
+        if (Result.Code is ReservationCompletionResultCode.Confirmed or ReservationCompletionResultCode.AlreadyConfirmed)
             Reservation = await _reservationService.GetReservationDetails(email);
         else if (Result == ReservationCompletionResult.NoSeatsLeft)
             SeatsLeft = await _reservationService.GetSeatsLeft();

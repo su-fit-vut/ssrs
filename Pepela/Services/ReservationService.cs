@@ -1,8 +1,10 @@
 ﻿// ReservationService.cs
 // Author: Ondřej Ondryáš
 
+using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -18,8 +20,14 @@ namespace Pepela.Services;
 public class ReservationService
 {
     private const string SeatsLeftCacheKey = "SeatsLeft";
-    private const string PubQuizSeatsLeftCacheKey = "PubQuizSeatsLeft";
     private const string TimeSlotSeatsLeftCacheKey = "TimeSlot.{0}.SeatsLeft";
+
+    public const int EscapeAActivityId = 1;
+    public const int EscapeBActivityId = 2;
+    public const int PubQuizTeamsActivityId = 3;
+    public const int PubQuizSoloActivityId = 4;
+    public const int PubQuizTeamsTimeSlotId = 25;
+    public const int PubQuizSoloTimeSlotId = 26;
 
     private readonly AppDbContext _dbContext;
     private readonly EmailService _emailService;
@@ -51,8 +59,8 @@ public class ReservationService
         model.Email = model.Email.ToLowerInvariant();
 
         var existing = await _dbContext.Reservations.Where(r => r.Email == model.Email)
-                                       .Include(r => r.AssociatedTimeSlots)
-                                       .FirstOrDefaultAsync();
+            .Include(r => r.AssociatedTimeSlots)
+            .FirstOrDefaultAsync();
 
         if (existing is { Confirmed: true, Cancelled: false })
             return ReservationAttemptResult.EmailTaken;
@@ -62,16 +70,34 @@ public class ReservationService
             if (!await this.CheckSeatsLeftForReservation(existing, model.Seats))
                 return ReservationAttemptResult.NoSeatsLeft;
 
-            if (!await this.CheckPubQuizTeamsLeftForReservation(existing))
-                return ReservationAttemptResult.NoPubQuizTeamsLeft;
+            async Task<ReservationAttemptResult> GetTimeslotErrorResult(int id)
+            {
+                var timeSlot =
+                    await _dbContext.TimeSlots
+                        .Include(x => x.Activity)
+                        .FirstOrDefaultAsync(x => x.Id == id);
+                if (timeSlot == null)
+                    return new ReservationAttemptResult(ReservationAttemptResultCode.TimeslotError,
+                        null, "Time slot not found.");
+
+                return new ReservationAttemptResult(ReservationAttemptResultCode.TimeslotError,
+                    this.ToModel(timeSlot, 0));
+            }
 
             if (model.EscapeASelectedId != null &&
-                !await this.CheckSlotSeatsLeftForReservation(model.EscapeASelectedId.Value, existing))
-                return ReservationAttemptResult.TimeslotError;
+                !await this.CheckSlotSeatsLeftForReservation(model.EscapeASelectedId.Value, existing, model.Seats))
+                return await GetTimeslotErrorResult(model.EscapeASelectedId.Value);
 
             if (model.EscapeBSelectedId != null &&
-                !await this.CheckSlotSeatsLeftForReservation(model.EscapeBSelectedId.Value, existing))
-                return ReservationAttemptResult.TimeslotError;
+                !await this.CheckSlotSeatsLeftForReservation(model.EscapeBSelectedId.Value, existing, model.Seats))
+                return await GetTimeslotErrorResult(model.EscapeBSelectedId.Value);
+
+            if (model.PubQuizTeamName != null)
+            {
+                var quizSlotId = model.PubQuizSeats == 1 ? PubQuizSoloTimeSlotId : PubQuizTeamsTimeSlotId;
+                if (!await this.CheckSlotSeatsLeftForReservation(quizSlotId, existing, model.Seats))
+                    return await GetTimeslotErrorResult(quizSlotId);
+            }
         }
 
         using var rng = RandomNumberGenerator.Create();
@@ -82,21 +108,30 @@ public class ReservationService
         if (existing != null)
             _dbContext.Remove(existing);
 
-        var associatedTimeSlots = new List<TimeSlotEntity>();
-        if (model.EscapeASelectedId != null)
+        var associatedTimeSlots = new List<ReservationTimeSlotAssociation>();
+
+        void AddSlotEntity(int id)
         {
-            var slot = await _dbContext.TimeSlots
-                                       .FirstOrDefaultAsync(x => x.Id == model.EscapeASelectedId);
-            if (slot != null)
-                associatedTimeSlots.Add(slot);
+            associatedTimeSlots.Add(new ReservationTimeSlotAssociation()
+            {
+                TimeSlotId = id,
+                TakenTimeSlotSeats = 1 // Not used now
+            });
         }
 
+        if (model.EscapeASelectedId != null)
+            AddSlotEntity(model.EscapeASelectedId.Value);
+
         if (model.EscapeBSelectedId != null)
+            AddSlotEntity(model.EscapeBSelectedId.Value);
+
+        if (model.PubQuizTeamName != null)
         {
-            var slot = await _dbContext.TimeSlots
-                                       .FirstOrDefaultAsync(x => x.Id == model.EscapeBSelectedId);
-            if (slot != null)
-                associatedTimeSlots.Add(slot);
+            model.PubQuizSeats ??= _seatsOptions.Value.MinPubQuizTeamSize;
+            if (model.PubQuizSeats == 1)
+                AddSlotEntity(PubQuizSoloTimeSlotId);
+            else
+                AddSlotEntity(PubQuizTeamsTimeSlotId);
         }
 
         var entity = new ReservationEntity()
@@ -111,7 +146,7 @@ public class ReservationService
             PubQuizTeamName = model.PubQuizTeamName,
             PubQuizSeats = model.PubQuizSeats ?? _seatsOptions.Value.MinPubQuizTeamSize,
 
-            AssociatedTimeSlots = associatedTimeSlots
+            TimeSlotAssociations = associatedTimeSlots
         };
 
         _dbContext.Add(entity);
@@ -124,12 +159,22 @@ public class ReservationService
         {
             _logger.LogError(e, "Error saving reservation.");
 
-            return ReservationAttemptResult.Error;
+            return ReservationAttemptResult.Error("Database update exception.");
         }
 
         if (existing != null)
         {
             await _emailService.SendCancelledEmail(existing.Email, existing.Seats, existing.MadeOn);
+        }
+
+        entity = await _dbContext.Reservations.Include(x => x.AssociatedTimeSlots)
+            .ThenInclude(x => x.Activity)
+            .FirstOrDefaultAsync(x => x.Id == entity.Id);
+
+        if (entity == null)
+        {
+            _logger.LogError("Reservation saving inconsistency: entity not found after save.");
+            return ReservationAttemptResult.Error("Reservation saving inconsistency.");
         }
 
         if (mustConfirm)
@@ -149,8 +194,9 @@ public class ReservationService
         email = email.ToLowerInvariant();
 
         var reservation = await _dbContext.Reservations.Where(r => r.Email == email)
-                                          .Include(r => r.AssociatedTimeSlots)
-                                          .FirstOrDefaultAsync();
+            .Include(r => r.AssociatedTimeSlots)
+            .ThenInclude(x => x.Activity)
+            .FirstOrDefaultAsync();
 
         if (reservation == null || reservation.Cancelled)
             return ReservationCompletionResult.NotFound;
@@ -166,13 +212,11 @@ public class ReservationService
             if (!await this.CheckSeatsLeftForReservation(reservation, reservation.Seats))
                 return ReservationCompletionResult.NoSeatsLeft;
 
-            if (!await this.CheckPubQuizTeamsLeftForReservation(reservation))
-                return ReservationCompletionResult.NoPubQuizTeamsLeft;
-
             foreach (var slot in reservation.AssociatedTimeSlots)
             {
-                if (!await this.CheckSlotSeatsLeftForReservation(slot, reservation))
-                    return ReservationCompletionResult.TimeslotError;
+                if (!await this.CheckSlotSeatsLeftForReservation(slot, reservation, reservation.Seats))
+                    return new ReservationCompletionResult(ReservationCompletionResultCode.TimeslotError,
+                        this.ToModel(slot, 0));
             }
         }
 
@@ -189,7 +233,7 @@ public class ReservationService
         {
             _logger.LogError(e, "Error completing reservation.");
 
-            return ReservationCompletionResult.Error;
+            return ReservationCompletionResult.Error("Database update exception");
         }
 
         return ReservationCompletionResult.Confirmed;
@@ -201,7 +245,7 @@ public class ReservationService
         email = email.ToLowerInvariant();
 
         var reservation = await _dbContext.Reservations.Where(r => r.Email == email)
-                                          .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync();
 
         if (reservation == null)
             return ReservationCompletionResult.NotFound;
@@ -226,7 +270,7 @@ public class ReservationService
             if (!reservation.Confirmed)
                 return ReservationCompletionResult.AlreadyConfirmed;
 
-            return ReservationCompletionResult.Error;
+            return ReservationCompletionResult.Error("Database update exception.");
         }
 
         return ReservationCompletionResult.Confirmed;
@@ -237,15 +281,17 @@ public class ReservationService
         email = email.ToLowerInvariant();
 
         return await _dbContext.Reservations
-                               .Include(r => r.AssociatedTimeSlots)
-                               .FirstOrDefaultAsync(r => r.Email == email);
+            .Include(r => r.AssociatedTimeSlots)
+            .FirstOrDefaultAsync(r => r.Email == email);
     }
 
     public async Task SendReminderEmailToAll(CancellationToken cancellationToken = default)
     {
         var reservations = _dbContext.Reservations
-                                     .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
-                                     .AsAsyncEnumerable();
+            .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
+            .Include(r => r.AssociatedTimeSlots)
+            .ThenInclude(ts => ts.Activity)
+            .AsAsyncEnumerable();
 
         var scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
 
@@ -257,22 +303,25 @@ public class ReservationService
             try
             {
                 var link = _linkService.MakeCancelLink(reservation.Email, reservation.ManagementToken);
+                var slots = JsonSerializer.Serialize(this.GetEmailExtras(reservation)
+                    .Select(x => new TimeSlotForJob(x)).ToImmutableArray());
+
                 var job = JobBuilder.Create<SendReminderEmailJob>()
-                                    .UsingJobData(new JobDataMap()
-                                    {
-                                        { "email", reservation.Email },
-                                        { "seats", reservation.Seats },
-                                        { "link", link },
-                                        { "timeSlots", this.GetEmailExtras(reservation) }
-                                    })
-                                    .WithIdentity(reservation.Id.ToString(), "reminder-email")
-                                    .Build();
+                    .UsingJobData(new JobDataMap()
+                    {
+                        { "email", reservation.Email },
+                        { "seats", reservation.Seats },
+                        { "link", link },
+                        { "timeSlots", slots }
+                    })
+                    .WithIdentity(reservation.Id.ToString(), "reminder-email")
+                    .Build();
 
                 var trigger = TriggerBuilder.Create()
-                                            .WithIdentity(reservation.Id.ToString(), "reminder-email")
-                                            .ForJob(job)
-                                            .StartNow()
-                                            .Build();
+                    .WithIdentity(reservation.Id.ToString(), "reminder-email")
+                    .ForJob(job)
+                    .StartNow()
+                    .Build();
 
                 await scheduler.ScheduleJob(job, trigger, cancellationToken);
             }
@@ -286,18 +335,24 @@ public class ReservationService
     private IAsyncEnumerable<ReservationEntity> GetConfirmedReservations()
     {
         return _dbContext.Reservations
-                         .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
-                         .AsAsyncEnumerable();
+            .Where(r => r.ConfirmedOn != null && r.CancelledOn == null)
+            .Include(r => r.AssociatedTimeSlots)
+            .AsAsyncEnumerable();
     }
 
     public async Task<string> MakeConfirmedReservationsCsv()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("mail;seats");
+        sb.AppendLine("mail;seats;pubquiz_team_name;pubquiz_team_size;sklep;kafka");
 
         await foreach (var reservation in this.GetConfirmedReservations())
         {
-            sb.AppendLine($"{reservation.Email};{reservation.Seats}");
+            var escapeA = reservation.AssociatedTimeSlots.FirstOrDefault(x => x.ActivityId == EscapeAActivityId);
+            var escapeB = reservation.AssociatedTimeSlots.FirstOrDefault(x => x.ActivityId == EscapeBActivityId);
+            var escapeATime = escapeA == null ? "-" : $"{escapeA.Start.InZone(_zone):HH:mm}–{escapeA.End.InZone(_zone):HH:mm}";
+            var escapeBTime = escapeB == null ? "-" : $"{escapeB.Start.InZone(_zone):HH:mm}–{escapeB.End.InZone(_zone):HH:mm}";
+            
+            sb.AppendLine($"{reservation.Email};{reservation.Seats};{reservation.PubQuizTeamName ?? "-"};{reservation.PubQuizSeats};{escapeATime};{escapeBTime}");
         }
 
         return sb.ToString();
@@ -314,34 +369,12 @@ public class ReservationService
         var unconfirmedValidMinutes = Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes);
 
         var taken = await _dbContext.Reservations.Where(r => r.CancelledOn == null &&
-                                        (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
-                                    .SumAsync(r => r.Seats);
+                                                             (r.ConfirmedOn != null ||
+                                                              (now - r.MadeOn) < unconfirmedValidMinutes))
+            .SumAsync(r => r.Seats);
 
         seatsLeft = int.Max(0, total - taken);
         _cache.Set(SeatsLeftCacheKey, seatsLeft, seatsLeft < 2
-            ? TimeSpan.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
-            : TimeSpan.FromHours(1));
-
-        return seatsLeft;
-    }
-
-    public async Task<int> GetPubQuizTeamsLeft(bool cached = false)
-    {
-        if (cached && _cache.TryGetValue(PubQuizSeatsLeftCacheKey, out int seatsLeft))
-            return seatsLeft;
-
-        var total = await this.GetTotalPubQuizTeams();
-
-        var now = SystemClock.Instance.GetCurrentInstant();
-        var unconfirmedValidMinutes = Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes);
-
-        var taken = await _dbContext.Reservations.Where(r => r.CancelledOn == null &&
-                                        (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes) &&
-                                        r.PubQuizTeamName != null)
-                                    .CountAsync();
-
-        seatsLeft = int.Max(0, total - taken);
-        _cache.Set(PubQuizSeatsLeftCacheKey, seatsLeft, seatsLeft < 2
             ? TimeSpan.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
             : TimeSpan.FromHours(1));
 
@@ -356,19 +389,21 @@ public class ReservationService
             return seatsLeft;
 
         var entity = await _dbContext.TimeSlots
-                                     .Include(x => x.AssociatedReservations)
-                                     .FirstOrDefaultAsync(x => x.Id == timeSlotId);
+            .Include(x => x.ReservationAssociations)
+            .ThenInclude(x => x.Reservation)
+            .FirstOrDefaultAsync(x => x.Id == timeSlotId);
 
         if (entity == null)
-            return 0;
+            return -1;
 
         var total = entity.TotalSeats;
         var now = SystemClock.Instance.GetCurrentInstant();
         var unconfirmedValidMinutes = Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes);
 
-        var taken = entity.AssociatedReservations.Where(r => r.CancelledOn == null &&
-                              (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
-                          .Sum(r => entity.AlwaysConsumeOnePerReservation ? 1 : r.Seats);
+        var taken = entity.ReservationAssociations.Where(r => r.Reservation.CancelledOn == null &&
+                                                              (r.Reservation.ConfirmedOn != null ||
+                                                               (now - r.Reservation.MadeOn) < unconfirmedValidMinutes))
+            .Sum(r => r.TakenTimeSlotSeats);
 
         seatsLeft = int.Max(0, total - taken);
         _cache.Set(cacheKey, seatsLeft, seatsLeft < 2
@@ -384,20 +419,9 @@ public class ReservationService
             return 0;
 
         return SystemClock.Instance.GetCurrentInstant() - entity.MadeOn <
-            Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
-                ? entity.Seats
-                : 0;
-    }
-
-    private int GetPubQuizTeamsCountedInReservation(ReservationEntity? entity)
-    {
-        if (entity is not { HasPubQuizTeam: true })
-            return 0;
-
-        return SystemClock.Instance.GetCurrentInstant() - entity.MadeOn <
-            Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
-                ? 1
-                : 0;
+               Duration.FromMinutes(_seatsOptions.Value.UnconfirmedValidMinutes)
+            ? entity.Seats
+            : 0;
     }
 
     private int GetSlotSeatsCountedInReservation(TimeSlotEntity? timeSlot, ReservationEntity? entity)
@@ -420,11 +444,6 @@ public class ReservationService
         return ValueTask.FromResult(_seatsOptions.Value.TotalSeats);
     }
 
-    public ValueTask<int> GetTotalPubQuizTeams()
-    {
-        return ValueTask.FromResult(_seatsOptions.Value.TotalPubQuizTeams);
-    }
-
     private async Task<bool> CheckSeatsLeftForReservation(ReservationEntity? reservation, int seats)
     {
         var left = await this.GetSeatsLeft() + this.GetSeatsCountedInReservation(reservation);
@@ -432,35 +451,23 @@ public class ReservationService
         return left - seats >= 0;
     }
 
-    private async Task<bool> CheckPubQuizTeamsLeftForReservation(ReservationEntity? reservation)
-    {
-        if (reservation is not { HasPubQuizTeam: true })
-            return true;
-
-        var left = await this.GetPubQuizTeamsLeft() + this.GetPubQuizTeamsCountedInReservation(reservation);
-
-        return left - 1 >= 0;
-    }
-
-    private async Task<bool> CheckSlotSeatsLeftForReservation(int timeSlotId, ReservationEntity? reservation)
+    private async Task<bool> CheckSlotSeatsLeftForReservation(int timeSlotId, ReservationEntity? reservation, int seats)
     {
         var timeSlot = await _dbContext.TimeSlots.FirstOrDefaultAsync(x => x.Id == timeSlotId);
 
-        return await this.CheckSlotSeatsLeftForReservation(timeSlot, reservation);
+        return await this.CheckSlotSeatsLeftForReservation(timeSlot, reservation, seats);
     }
 
-    private async Task<bool> CheckSlotSeatsLeftForReservation(TimeSlotEntity? timeSlot, ReservationEntity? reservation)
+    private async Task<bool> CheckSlotSeatsLeftForReservation(TimeSlotEntity? timeSlot, ReservationEntity? reservation,
+        int seats)
     {
-        if (reservation == null)
-            return true;
-
         if (timeSlot == null)
             return false;
 
         var left = await this.GetSlotSeatsLeft(timeSlot.Id) +
-            this.GetSlotSeatsCountedInReservation(timeSlot, reservation);
+                   this.GetSlotSeatsCountedInReservation(timeSlot, reservation);
 
-        var seatsToConsume = timeSlot.AlwaysConsumeOnePerReservation ? 1 : reservation.Seats;
+        var seatsToConsume = timeSlot.AlwaysConsumeOnePerReservation ? 1 : seats;
 
         return left - seatsToConsume >= 0;
     }
@@ -477,21 +484,7 @@ public class ReservationService
     private IEnumerable<TimeSlot> GetEmailExtras(ReservationEntity reservationEntity)
     {
         var extras = reservationEntity.AssociatedTimeSlots
-                                      .Select(x => this.ToModel(x, 0));
-        if (reservationEntity.PubQuizTeamName != null)
-        {
-            var pubQuizTimeSlot = new TimeSlot()
-            {
-                Id = -1,
-                Start = Instant.FromUtc(2024, 9, 27, 17, 0).InZone(_zone),
-                End = Instant.FromUtc(2024, 9, 27, 22, 0).InZone(_zone),
-                ActivityName = "Pubkvíz",
-                Note = $"Tým {reservationEntity.PubQuizTeamName}",
-                TotalSeats = -1, AlwaysConsumeOnePerReservation = false, AvailableSeats = -1
-            };
-            extras = extras.Append(pubQuizTimeSlot);
-        }
-
+            .Select(x => this.ToModel(x, 0));
         return extras;
     }
 
@@ -500,6 +493,7 @@ public class ReservationService
         return new TimeSlot()
         {
             Id = slotEntity.Id,
+            ActivityId = slotEntity.ActivityId,
             Start = slotEntity.Start.InZone(_zone),
             End = slotEntity.End.InZone(_zone),
             ActivityName = slotEntity.Activity.Name,
@@ -513,10 +507,10 @@ public class ReservationService
     public async Task<List<TimeSlot>> GetTimeslotsForActivity(int slottedActivityId)
     {
         var slots = await _dbContext.TimeSlots
-                                    .Where(x => x.ActivityId == slottedActivityId)
-                                    .Include(x => x.Activity)
-                                    .Include(x => x.AssociatedReservations)
-                                    .ToListAsync();
+            .Where(x => x.ActivityId == slottedActivityId)
+            .Include(x => x.Activity)
+            .Include(x => x.AssociatedReservations)
+            .ToListAsync();
 
         var ret = new List<TimeSlot>();
         var now = SystemClock.Instance.GetCurrentInstant();
@@ -525,15 +519,23 @@ public class ReservationService
         foreach (var slotEntity in slots)
         {
             var availableSeats = slotEntity.TotalSeats
-                - slotEntity.AssociatedReservations
-                            .Where(r => r.CancelledOn == null &&
-                                (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
-                            .Sum(x => slotEntity.AlwaysConsumeOnePerReservation ? 1 : x.Seats);
+                                 - slotEntity.AssociatedReservations
+                                     .Where(r => r.CancelledOn == null &&
+                                                 (r.ConfirmedOn != null || (now - r.MadeOn) < unconfirmedValidMinutes))
+                                     .Sum(x => slotEntity.AlwaysConsumeOnePerReservation ? 1 : x.Seats);
 
             var slotModel = this.ToModel(slotEntity, availableSeats);
             ret.Add(slotModel);
         }
 
         return ret;
+    }
+
+    public async Task<(bool Teams, bool Solo)> GetPubQuizAvailability(bool cached)
+    {
+        var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
+        var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
+
+        return (teamsSlots[0].AvailableSeats > 0, soloSlots[0].AvailableSeats > 0);
     }
 }

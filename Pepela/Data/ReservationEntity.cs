@@ -29,6 +29,7 @@ public class ReservationEntity
     [MaxLength(32)] public string? PubQuizTeamName { get; set; }
     public int PubQuizSeats { get; set; }
     public List<TimeSlotEntity> AssociatedTimeSlots { get; set; } = null!;
+    public List<ReservationTimeSlotAssociation> TimeSlotAssociations { get; set; } = null!;
 
     [NotMapped] public bool Cancelled => CancelledOn != null;
     [NotMapped] public bool Confirmed => ConfirmedOn != null;

@@ -20,7 +20,12 @@ public class AppDbContext : DbContext
     {
         modelBuilder.Entity<ReservationEntity>()
                     .HasMany(r => r.AssociatedTimeSlots)
-                    .WithMany(ts => ts.AssociatedReservations);
+                    .WithMany(r => r.AssociatedReservations)
+                    .UsingEntity<ReservationTimeSlotAssociation>(
+                        r => r.HasOne<TimeSlotEntity>(e => e.TimeSlot).WithMany(e => e.ReservationAssociations)
+                            .OnDelete(DeleteBehavior.Cascade),
+                        l => l.HasOne<ReservationEntity>(e => e.Reservation).WithMany(e => e.TimeSlotAssociations)
+                            .OnDelete(DeleteBehavior.Cascade));
 
         modelBuilder.Entity<TimeSlotEntity>()
                     .HasOne(ts => ts.Activity)

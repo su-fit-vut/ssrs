@@ -343,16 +343,21 @@ public class ReservationService
     public async Task<string> MakeConfirmedReservationsCsv()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("mail;seats;pubquiz_team_name;pubquiz_team_size;sklep;kafka");
+        sb.AppendLine("mail;seats;sleep;pubquiz_team_name;pubquiz_team_size;sklep;kafka");
 
         await foreach (var reservation in this.GetConfirmedReservations())
         {
             var escapeA = reservation.AssociatedTimeSlots.FirstOrDefault(x => x.ActivityId == EscapeAActivityId);
             var escapeB = reservation.AssociatedTimeSlots.FirstOrDefault(x => x.ActivityId == EscapeBActivityId);
-            var escapeATime = escapeA == null ? "-" : $"{escapeA.Start.InZone(_zone):HH:mm}–{escapeA.End.InZone(_zone):HH:mm}";
-            var escapeBTime = escapeB == null ? "-" : $"{escapeB.Start.InZone(_zone):HH:mm}–{escapeB.End.InZone(_zone):HH:mm}";
-            
-            sb.AppendLine($"{reservation.Email};{reservation.Seats};{reservation.PubQuizTeamName ?? "-"};{reservation.PubQuizSeats};{escapeATime};{escapeBTime}");
+            var escapeATime = escapeA == null
+                ? "-"
+                : $"{escapeA.Start.InZone(_zone):HH:mm}–{escapeA.End.InZone(_zone):HH:mm}";
+            var escapeBTime = escapeB == null
+                ? "-"
+                : $"{escapeB.Start.InZone(_zone):HH:mm}–{escapeB.End.InZone(_zone):HH:mm}";
+
+            sb.AppendLine(
+                $"{reservation.Email};{reservation.Seats};{reservation.SleepOver};{reservation.PubQuizTeamName?.Replace(';', '-') ?? "-"};{reservation.PubQuizSeats};{escapeATime};{escapeBTime}");
         }
 
         return sb.ToString();

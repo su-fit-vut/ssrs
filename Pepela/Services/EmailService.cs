@@ -85,26 +85,23 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 <h2>Noc na FITu</h2>
 <p style=""font-weight: bold;"">27. 9. 2024</p>
 <p>
-    Ahoj! Už ve pátek nás čeká Noc na FITu.
+    Ahoj! Už v&nbsp;pátek nás čeká Noc na FITu.
 </p>
 
 <h3>Organizační informace</h3>
 <p>
-    Koncert by měl začít cca v 18:30. Kachna bude otevřena od <span style=""font-weight: bold;"">17:00</span>.<br>
-    U vstupu stačí říct e-mail, pro který je rezervace vytvořená.<br>
-    Doporučené vstupné na koncert je 150 Kč, platit lze jen v hotovosti. Pokud budeš mít přesně, budeme převelice šťastní.
+    Celá akce bude začínat cca v&nbsp;18 hodin, stejně tak Noc vědců.
+    U&nbsp;vstupu se nemusíš nijak prokazovat a můžeš přijít kudy chceš, akce probíhá po celé škole. Veškeré potřebné informace
+     včetně programu se dozvíš na <a href=""https://www.instagram.com/sufitvut"">instagramu SU</a>.
 </p>
 <p>
     Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>.
 </p>
 {2}
 <p>
-    Kachna se nachází v místnosti R212 na FIT VUT. Odemknut by měl být 
-    vchod do budovy P/R <a href=""https://maps.app.goo.gl/v9doZS8uP2tQbLYU9"">pod Kachnou</a>, ke kterému se dostaneš 
-    brankou z ulice Metodějova. Pokud by bylo zamčeno, můžeš zavolat na <a href=""tel:+420541141013"">541 141 013</a>.
-    Dovolujeme si připomenout, že Kachna zavírá ve 21:50. Nad klubem se nachází koleje, dopřejme tedy prosím jejich
-    obyvatelům v noci klid. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty (jakož i v celém areálu fakulty
-    a klubu), to platí i pro elektronické cigarety a obdobné záležitosti. V případě potřeby proto prosím využijte 
+    Noc na FITu se bude odehrávat v&nbsp;areálu FIT VUT, ve kterém se nachází také koleje, dopřejme tedy prosím jejich
+    obyvatelům v noci klid a&nbsp;umírněme zvukové projevy. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty
+     (jakož i&nbsp;v&nbsp;celém areálu fakulty), to platí i&nbsp;pro elektronické cigarety a&nbsp;obdobné záležitosti. V&nbsp;případě potřeby proto prosím využijte 
     <a href=""https://maps.app.goo.gl/NRwpXP4ReYYpKEHi7"">prostor před brankou</a>.
 </p>
 <p>
@@ -128,12 +125,12 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
         _logger = logger;
         _options = options.Value;
     }
-    
+
     private string MakeExtrasPartial(IEnumerable<TimeSlot>? extras)
     {
         if (extras == null)
             return string.Empty;
-        
+
         var sb = new StringBuilder();
         foreach (var extra in extras)
         {
@@ -149,10 +146,11 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 
         return string.Format(ExtrasPartial, sb);
     }
-   
-    public async Task SendConfirmationMail(string to, string confirmLink, string cancelLink, IEnumerable<TimeSlot>? extras)
+
+    public async Task SendConfirmationMail(string to, string confirmLink, string cancelLink,
+        IEnumerable<TimeSlot>? extras)
     {
-        var msg = string.Format(ConfirmationMail, confirmLink, _seatsOptions.Value.UnconfirmedValidMinutes, 
+        var msg = string.Format(ConfirmationMail, confirmLink, _seatsOptions.Value.UnconfirmedValidMinutes,
             cancelLink, this.MakeExtrasPartial(extras));
         await this.SendAsync("Noc na FITu: Potvrď rezervaci", msg, to);
     }

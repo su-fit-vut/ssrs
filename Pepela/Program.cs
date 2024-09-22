@@ -1,5 +1,7 @@
 using System.Data.Common;
 using System.Net;
+using System.Security.Claims;
+using AspNet.Security.OAuth.Discord;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -73,11 +75,31 @@ var kisAuthOptions = builder.Configuration.GetRequiredSection("KisAuth").Get<Kis
 builder.Services
     .AddAuthentication(options =>
     {
-        options.DefaultChallengeScheme = "kis";
+        //options.DefaultChallengeScheme = "kis";
+        options.DefaultChallengeScheme = DiscordAuthenticationDefaults.AuthenticationScheme;
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
-    .AddCookie(options => { })
-    .AddOpenIdConnect("kis", "KIS Auth",
+    .AddCookie()
+    .AddDiscord(DiscordAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = kisAuthOptions.ClientId;
+        options.ClientSecret = kisAuthOptions.ClientSecret;
+        options.CallbackPath = new PathString("/DiscordCallback");
+        options.AccessDeniedPath = new PathString("/Error");
+        options.UsePkce = true;
+        options.Scope.Add("identify");
+        options.Scope.Add("email");
+    });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("IsAdmin", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim(ClaimTypes.NameIdentifier, kisAuthOptions.AdminDiscordIds);
+    });
+});
+
+    /*.AddOpenIdConnect("kis", "KIS Auth",
         options =>
         {
             options.Authority = kisAuthOptions.Authority;
@@ -92,7 +114,7 @@ builder.Services
             options.Scope.Add("roles");
 
             options.MapInboundClaims = true;
-        });
+        });*/
 
 var app = builder.Build();
 

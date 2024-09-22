@@ -17,6 +17,7 @@
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="8.0.4" />
         <PackageReference Include="MailKit" Version="4.7.1.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.8" />
+        <PackageReference Include="AspNet.Security.OAuth.Discord" Version="8.2.0" />
         <PackageReference Include="Quartz.AspNetCore" Version="3.13.0" />
         <PackageReference Include="Quartz.Serialization.SystemTextJson" Version="3.13.0" />
     </ItemGroup>
@@ -25,10 +26,6 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Migrations\" />
     </ItemGroup>
 
 </Project>

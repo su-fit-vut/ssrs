@@ -9,11 +9,11 @@ using Pepela.Services;
 
 namespace Pepela.Pages;
 
-[Authorize(Roles = "ExecutiveMember")]
+[Authorize("IsAdmin")]
 public class AdminModel : PageModel
 {
     private readonly ReservationService _reservationService;
-    public bool MailSent { get; set; }
+    [TempData] public bool MailSent { get; set; }
 
     public AdminModel(ReservationService reservationService)
     {
@@ -24,10 +24,12 @@ public class AdminModel : PageModel
     {
     }
 
-    public async Task OnGetSendMails(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetSendMails(CancellationToken cancellationToken)
     {
         await _reservationService.SendReminderEmailToAll(cancellationToken);
         MailSent = true;
+
+        return RedirectToPage("Admin");
     }
 
     public async Task<IActionResult> OnGetCsv()

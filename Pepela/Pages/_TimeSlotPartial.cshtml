@@ -9,7 +9,17 @@
     <div class="card mb-3 @Html.Raw(slot.IsAvailable ? "" : "not-available")">
         <div class="card-body">
             <h6 class="card-title">@slot.Start.ToString("HH:mm", null)–@slot.End.ToString("HH:mm", null)</h6>
-            <h6 class="card-subtitle mb-1 text-muted">@Html.Raw(slot.AlwaysConsumeOnePerReservation ? "volno (týmy)" : "volno"): @slot.AvailableSeats/@slot.TotalSeats</h6>
+            <h6 class="card-subtitle mb-1 text-muted">
+                @if (slot.IsAvailable)
+                {
+                    @:volno
+                }
+                else
+                {
+                    @:obsazeno
+                }
+                @*Html.Raw(slot.AlwaysConsumeOnePerReservation ? "volno (týmy)" : "volno"): @slot.AvailableSeats/@slot.TotalSeats*@
+            </h6>
             @if (slot.Note != null)
             {
                 <p class="card-text">@Html.Raw(slot.Note)</p>

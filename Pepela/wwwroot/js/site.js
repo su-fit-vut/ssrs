@@ -1,15 +1,18 @@
-﻿// Make all radios uncheckable
-(function () {
-    let lastCheckedRadio = null;
-    document.querySelectorAll('input[type="radio"]').forEach(function (radio) {
-        radio.addEventListener('click', function (e) {
-            // If the clicked radio is the same as the last checked, uncheck it
-            if (lastCheckedRadio === radio) {
-                radio.checked = false;
-                lastCheckedRadio = null;  // Reset the last checked radio
-            } else {
-                lastCheckedRadio = radio;  // Update last checked radio
-            }
+﻿(function () {
+    document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function (e) {
+            let changedBox = this;
+            
+            document.getElementsByName(this.name).forEach(function (elem) {
+                if (elem !== changedBox) {
+                    elem.checked = false;
+                }
+            });
+            
+            console.info("change: " + this.name + " to " + this.checked);
+        });
+        
+        checkbox.addEventListener('click', function (e) {
         });
     });
 })();

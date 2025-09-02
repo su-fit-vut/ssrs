@@ -1,32 +1,33 @@
-﻿@model System.ValueTuple<String, Pepela.Models.TimeSlot>
+﻿@model ValueTuple<Pepela.Models.TimeSlot, bool>
 @{
     Layout = null;
-    var name = Model.Item1;
-    var slot = Model.Item2;
+    var slot = Model.Item1;
+    var name = $"InputModel.SelectedTimeSlotIds[{slot.ActivityId}]";
+    var formatProviderCs = System.Globalization.CultureInfo.GetCultureInfo("cs-CZ");
 }
 
 <div class="col-6 col-md-4 col-lg-3 col-xl-2">
     <div class="card mb-3 @Html.Raw(slot.IsAvailable ? "" : "not-available")">
         <div class="card-body">
+            <h6 class="card-title mb-1">@slot.Start.ToString("dddd", formatProviderCs)</h6>
             <h6 class="card-title">@slot.Start.ToString("HH:mm", null)–@slot.End.ToString("HH:mm", null)</h6>
             <h6 class="card-subtitle mb-1 text-muted">
                 @if (slot.IsAvailable)
                 {
-                    @:volno
+                    @:volno: @slot.AvailableSeats/@slot.TotalSeats
                 }
                 else
                 {
-                    @:obsazeno
+                    @:plně obsazeno
                 }
-                @*Html.Raw(slot.AlwaysConsumeOnePerReservation ? "volno (týmy)" : "volno"): @slot.AvailableSeats/@slot.TotalSeats*@
             </h6>
             @if (slot.Note != null)
             {
                 <p class="card-text">@Html.Raw(slot.Note)</p>
             }
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="@name" id="@name-@slot.Id" value="@slot.Id"
-                       @Html.Raw(slot.IsAvailable ? "" : "disabled")>
+                <input class="form-check-input" type="checkbox" name="@name" id="@name-@slot.Id" value="@slot.Id"
+                       @Html.Raw(slot.IsAvailable ? "" : "disabled") @Html.Raw(Model.Item2 ? "checked" : "") />
                 <label class="form-check-label" for="@name-@slot.Id">
                     Zarezervovat
                 </label>

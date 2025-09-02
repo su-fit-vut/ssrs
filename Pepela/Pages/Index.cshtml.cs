@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Humanizer;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
-using NodaTime;
 using Pepela.Configuration;
 using Pepela.Models;
 using Pepela.Services;
@@ -21,15 +18,16 @@ public class IndexModel : PageModel
     [BindNever] public int MaxSeats { get; set; }
     [BindNever] public ReservationAttemptResult? Result { get; set; } = null;
     [BindNever] public int SeatsLeft { get; set; }
-    [BindNever] public List<TimeSlot> EscapeASlots { get; set; } = null!;
-    [BindNever] public List<TimeSlot> EscapeBSlots { get; set; } = null!;
+    [BindNever] public Dictionary<int, SlottedActivity> Slots { get; set; } = new();
 
-    [BindNever] public bool PubQuizTeamsAvailable { get; set; }
-    [BindNever] public bool PubQuizSoloAvailable { get; set; }
+    [BindProperty(Name = "email", SupportsGet = true)]
+    public string? Email { get; set; }
 
-    [BindNever]
-    public int MinPubQuizTeamSize =>
-        PubQuizSoloAvailable ? 1 : (PubQuizTeamsAvailable ? _seatsOptions.Value.MinPubQuizTeamSize : 2);
+    [BindProperty(Name = "token", SupportsGet = true)]
+    public string? Token { get; set; }
+
+    [BindNever] public bool EditMode { get; set; } = false;
+
 
     public IndexModel(ReservationService reservationService, IOptionsSnapshot<SeatsOptions> seatsOptions,
         ILogger<IndexModel> logger)
@@ -41,11 +39,11 @@ public class IndexModel : PageModel
         MaxSeats = seatsOptions.Value.MaximumPerEmail;
     }
 
-    public async Task OnGet(string? email)
+    public async Task OnGet()
     {
         InputModel = new ReservationModel()
         {
-            Email = email ?? string.Empty,
+            Email = Email ?? string.Empty,
             Seats = 1
         };
 
@@ -58,25 +56,25 @@ public class IndexModel : PageModel
             ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.Seats)}",
                 "Neplatný počet rezervovaných míst.");
 
-        var pubQuizOk = true;
-        if (!string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName))
-        {
-            if (InputModel.PubQuizSeats is null)
-                pubQuizOk = false;
-
-            (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability(false);
-            if (InputModel.PubQuizSeats < MinPubQuizTeamSize
-                || InputModel.PubQuizSeats > _seatsOptions.Value.MaxPubQuizTeamSize)
-                pubQuizOk = false;
-        }
-
-        if (!pubQuizOk)
-            ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
-                "Neplatný počet členů týmu pro pubkvíz.");
-
-        if (string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName) && InputModel.PubQuizSeats is not (null or 0))
-            ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
-                "Musíte zadat jméno týmu pro pubkvíz.");
+        // var pubQuizOk = true;
+        // if (!string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName))
+        // {
+        //     if (InputModel.PubQuizSeats is null)
+        //         pubQuizOk = false;
+        //
+        //     (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability(false);
+        //     if (InputModel.PubQuizSeats < MinPubQuizTeamSize
+        //         || InputModel.PubQuizSeats > _seatsOptions.Value.MaxPubQuizTeamSize)
+        //         pubQuizOk = false;
+        // }
+        //
+        // if (!pubQuizOk)
+        //     ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
+        //         "Neplatný počet členů týmu pro pubkvíz.");
+        //
+        // if (string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName) && InputModel.PubQuizSeats is not (null or 0))
+        //     ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
+        //         "Musíte zadat jméno týmu pro pubkvíz.");
 
         if (!ModelState.IsValid)
         {
@@ -84,7 +82,7 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        Result = await _reservationService.MakeReservation(InputModel);
+        Result = await _reservationService.MakeReservation(InputModel, updateToken: Token);
         await this.InitModel(false);
 
         return Page();
@@ -94,8 +92,27 @@ public class IndexModel : PageModel
     {
         SeatsLeft = await _reservationService.GetSeatsLeft(true);
         MaxSeats = int.Min(SeatsLeft, MaxSeats);
-        (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability(true);
-        EscapeASlots = await _reservationService.GetTimeslotsForActivity(1);
-        EscapeBSlots = await _reservationService.GetTimeslotsForActivity(2);
+
+        var activities = await _reservationService.GetSlottedActivities();
+        foreach (var activity in activities)
+        {
+            Slots.Add(activity.Id, activity);
+        }
+
+        if (Email != null && Token != null && InputModel.Email == Email)
+        {
+            var reservation = await _reservationService.GetReservationDetails(Email, Token);
+            if (reservation != null)
+            {
+                EditMode = true;
+                InputModel.Seats = reservation.Seats;
+                InputModel.SleepOver = reservation.SleepOver;
+
+                foreach (var slot in reservation.AssociatedTimeSlots)
+                {
+                    InputModel.SelectedTimeSlotIds[slot.ActivityId] = slot.Id;
+                }
+            }
+        }
     }
 }

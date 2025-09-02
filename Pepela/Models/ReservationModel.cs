@@ -13,16 +13,15 @@ public class ReservationModel
     [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
     public required int Seats { get; set; }
 
-    [Required] public bool SleepOver { get; set; } = false;
+    public bool SleepOver { get; set; } = false;
 
-    [MaxLength(32)]
-    public string? PubQuizTeamName { get; set; }
+    // [MaxLength(32)]
+    // public string? PubQuizTeamName { get; set; }
+    //
+    // [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
+    // public int? PubQuizSeats { get; set; }
+    //
+    // public bool PubQuizSolo { get; set; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
-    public int? PubQuizSeats { get; set; }
-    
-    public bool PubQuizSolo { get; set; }
-
-    [BindProperty] public int? EscapeASelectedId { get; set; }
-    [BindProperty] public int? EscapeBSelectedId { get; set; }
+    [BindProperty] public Dictionary<int, int?> SelectedTimeSlotIds { get; set; } = new();
 }

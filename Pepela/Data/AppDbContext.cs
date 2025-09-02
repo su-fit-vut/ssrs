@@ -32,6 +32,10 @@ public class AppDbContext : DbContext
                     .WithMany(a => a.TimeSlots)
                     .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<TimeSlotEntity>()
+                    .HasMany(ts => ts.CollidesWith)
+                    .WithMany();
+
         base.OnModelCreating(modelBuilder);
     }
 }

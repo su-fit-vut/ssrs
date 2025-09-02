@@ -7,4 +7,5 @@ public record SlottedActivity
 {
     public required int Id { get; init; }
     public required string Name { get; init; }
+    public required List<TimeSlot> TimeSlots { get; init; }
 }

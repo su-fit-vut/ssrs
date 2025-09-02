@@ -42,4 +42,12 @@ public class LinkService
                 _scheme, _host, _path)!
             : _linkGenerator.GetUriByPage(_context, "Cancel", null, new { email = mail, token = token })!;
     }
+    
+    public string MakeEditLink(string mail, string token)
+    {
+        return _context == null
+            ? _linkGenerator.GetUriByPage("Index", null, new { email = mail, token = token },
+                _scheme, _host, _path)!
+            : _linkGenerator.GetUriByPage(_context, "Index", null, new { email = mail, token = token })!;
+    }
 }

@@ -2,9 +2,11 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - "**"
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - "**"
 
 jobs:
   PublishImage:
@@ -15,16 +17,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Determine image tag
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "master" ]; then
+            echo "IMAGE_TAG=latest" >> "$GITHUB_ENV"
+          else
+            # Sanitize branch name for Docker tag (replace '/' with '-')
+            SAFE_TAG="${GITHUB_REF_NAME//\//-}"
+            echo "IMAGE_TAG=${SAFE_TAG}" >> "$GITHUB_ENV"
+          fi
       - name: Login to GHCR
+        if: github.event_name == 'push'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Pepela/Dockerfile
           push: true
-          tags: ghcr.io/su-fit-vut/ssrs:latest
+          tags: ghcr.io/su-fit-vut/ssrs:${{ env.IMAGE_TAG }}

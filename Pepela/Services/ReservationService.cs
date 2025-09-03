@@ -296,7 +296,7 @@ public class ReservationService
             return ReservationAttemptResult.Error("Database update exception.");
         }
 
-        if (existing != null)
+        if (existing is { Cancelled: false })
         {
             await _emailService.SendCancelledEmail(existing.Email, existing.Seats, existing.MadeOn);
         }

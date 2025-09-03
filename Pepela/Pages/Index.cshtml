@@ -187,7 +187,7 @@
         {
             <form method="post" class="mb-4">
                 <div class="row mb-3">
-                    <div class="col-8">
+                    <div class="@(Model.MaxSeats > 1 ? "col-8" : "col-12 col-lg-6")">
                         <label for="inputEmail" class="form-label">E-mail:</label>
                         @if (Model.EditMode)
                         {

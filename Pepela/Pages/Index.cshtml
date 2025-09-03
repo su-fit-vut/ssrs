@@ -1,6 +1,7 @@
 ﻿@page
 @using Pepela.Models
 @using Microsoft.Extensions.Options
+@using Org.BouncyCastle.Ocsp
 @using Pepela.Configuration
 @inject IOptionsSnapshot<SeatsOptions> SeatsOptions
 @model IndexModel
@@ -14,7 +15,7 @@
         @if (Model.Result != null)
         {
             var wasSuccess = Model.Result?.Code is ReservationAttemptResultCode.MustConfirm
-                or ReservationAttemptResultCode.Updated;
+                or ReservationAttemptResultCode.Updated or ReservationAttemptResultCode.Confirmed;
             var alertClass = wasSuccess ? "success" : "warning";
 
             <div class="alert alert-@alertClass fade show" role="alert">
@@ -39,6 +40,12 @@
                             Rezervaci můžeš kdykoliv zrušit kliknutím na odkaz v&nbsp;e-mailu.
                         </span>
 
+                        break;
+                    case ReservationAttemptResultCode.Confirmed:
+                        <h3>Rezervace vytvořena a potvrzena</h3>
+                        <span>
+                            Aktuálně se nacházíš v&nbsp;režimu úpravy nově vytvořené rezervace.
+                        </span>
                         break;
                     case ReservationAttemptResultCode.NoSeatsLeft:
                         <span>
@@ -83,6 +90,12 @@
                         </span>
                     }
                         break;
+                    case ReservationAttemptResultCode.TimeslotNotReservable:
+                        <span>
+                            Zvolený časový slot pro aktivitu „@Model.Result?.CollidingTimeSlot?.ActivityName“ teď nelze rezervovat.
+                        </span>
+
+                        break;
                     case ReservationAttemptResultCode.TimeslotCollision:
                         <span>
                             Není možné zároveň rezervovat aktivity „@Model.Result?.CollidingTimeSlot?.ActivityName“ a „@Model.Result?.CollidingTimeSlotRight?.ActivityName“ ve stejném čase!
@@ -91,7 +104,7 @@
                         break;
                     case ReservationAttemptResultCode.EmailTaken:
                         <span>
-                            Pro tento e-mail už existuje potvrzená rezervace. Zrušit ji můžeš kliknutím na odkaz v&nbsp;potvrzovacím e-mailu.
+                            Pro tento e-mail už existuje potvrzená rezervace. Můžeš ji upravit nebo zrušit kliknutím na odkaz v&nbsp;potvrzovacím e-mailu.
                         </span>
 
                         break;
@@ -158,10 +171,11 @@
         <h2 class="mb-4">Start@FIT 2025 – rezervace aktivit</h2>
 
         <p>
-            Na tomto webu si můžeš zarezervovat místo na prohlídkách nebo 
+            Na tomto webu si můžeš zarezervovat místo na prohlídkách nebo
             v&nbsp;<a href="https://www.startatfit.cz/patek" target="_blank">pátečních</a> miniturnajích.
             <br/><span class="fw-bold">Pozor na kolize s&nbsp;programem</span> pro tvou skupinu (podle příjmení)!
             Ověř si program na <a href="https://www.startatfit.cz/" target="_blank">webu akce</a>.
+            <br/>Nelze rezervovat více aktivit ve stejném čase.
             <br/>Po odeslání formuláře ti přijde e-mail s&nbsp;odkazem na potvrzení rezervace. Link je platný 10 minut.
             <br/>Rezervace je platná až po potvrzení!
         </p>
@@ -296,8 +310,22 @@
                     <hr/>
                 }
 
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">@(Model.EditMode ? "Vytvořit rezervaci" : "Upravit rezervaci")</button>
+                <div class="d-grid gap-2 d-md-block">
+                    <button type="submit"
+                            class="btn btn-primary">@(Model.EditMode ? "Upravit rezervaci" : "Vytvořit rezervaci")</button>
+
+                    @if ((await AuthorizationService.AuthorizeAsync(User, "IsAdmin")).Succeeded)
+                    {
+                        <button type="submit" asp-page-handler="AdminSubmit"
+                                asp-route-email="@Model.InputModel.Email" asp-route-token="_edit"
+                                class="btn btn-warning">@(Model.EditMode ? "Vynutit úpravu" : "Vynutit rezervaci")</button>
+
+                        @if (Model.EditMode)
+                        {
+                            <a asp-page="Cancel" asp-route-email="@Model.Email" asp-route-token="_edit"
+                               class="btn btn-danger">Zrušit rezervaci</a>
+                        }
+                    }
                 </div>
             </form>
 

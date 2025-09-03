@@ -8,10 +8,12 @@ public enum ReservationAttemptResultCode
     MustConfirm,
     NoSeatsLeft,
     TimeslotError,
+    TimeslotNotReservable,
     EmailTaken,
     TimeslotCollision,
     NoActivityChosen,
     Updated,
+    Confirmed,
     Error
 }
 
@@ -37,6 +39,7 @@ public record struct ReservationAttemptResult(
     public static readonly ReservationAttemptResult EmailTaken = new(ReservationAttemptResultCode.EmailTaken);
     public static readonly ReservationAttemptResult NoActivityChosen = new(ReservationAttemptResultCode.NoActivityChosen);
     public static readonly ReservationAttemptResult Updated = new(ReservationAttemptResultCode.Updated);
+    public static readonly ReservationAttemptResult Confirmed = new(ReservationAttemptResultCode.Confirmed);
 
     public static ReservationAttemptResult Error(string error)
         => new(ReservationAttemptResultCode.Error, null, null, error);

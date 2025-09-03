@@ -2,7 +2,6 @@
 // Author: Ondřej Ondryáš
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using NodaTime;
 
 namespace Pepela.Data;
@@ -14,6 +13,9 @@ public class TimeSlotEntity
     [Required] public Instant End { get; set; }
     [Required] public int TotalSeats { get; set; }
     [MaxLength(128)] public string? Note { get; set; }
+
+    public Instant? ReserveAfter { get; set; }
+    public Instant? ReserveBefore { get; set; }
 
     [Required] public int ActivityId { get; set; }
     public SlottedActivityEntity Activity { get; set; } = null!;

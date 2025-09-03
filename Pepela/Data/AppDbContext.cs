@@ -34,7 +34,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<TimeSlotEntity>()
                     .HasMany(ts => ts.CollidesWith)
-                    .WithMany();
+                    .WithMany()
+                    .UsingEntity(x => x.ToTable("TimeSlotCollisions"));
 
         base.OnModelCreating(modelBuilder);
     }

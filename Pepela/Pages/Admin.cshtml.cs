@@ -32,11 +32,11 @@ public class AdminModel : PageModel
         return RedirectToPage("Admin");
     }
 
-    public async Task<IActionResult> OnGetCsv()
+    public async Task<IActionResult> OnGetReservationList()
     {
-        var csv = await _reservationService.MakeConfirmedReservationsCsv();
+        var csv = await _reservationService.MakeConfirmedReservationsJson();
         var bytes = Encoding.UTF8.GetBytes(csv);
 
-        return File(bytes, "text/csv", "rezervace.csv");
+        return File(bytes, "text/json", "rezervace.json");
     }
 }

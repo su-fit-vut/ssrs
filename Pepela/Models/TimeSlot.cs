@@ -15,9 +15,16 @@ public record TimeSlot
     public required int TotalSeats { get; init; }
     public required int AvailableSeats { get; init; }
     public string? Note { get; init; }
+    public required bool IsReservable { get; init; }
+    public required ZonedDateTime? ReserveDateBound { get; init; }
 
     public bool IsAvailable => AvailableSeats > 0;
     public bool AlwaysConsumeOnePerReservation { get; init; }
+}
+
+public record TimeSlotWithReservations : TimeSlot
+{
+    public required IList<ReservationOverview> Reservations { get; init; }
 }
 
 public record TimeSlotForJob

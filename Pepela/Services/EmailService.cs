@@ -28,7 +28,7 @@ public class EmailService
         """;
 
     private const string ConfirmationMail = @"
-<h2>Potvrď rezervaci místa</h2>
+<h2>Potvrď rezervaci</h2>
 <p style=""font-weight: bold;"">Start@FIT 2025</p>
 <p>
     Díky za rezervaci! Potvrď ji prosím kliknutím na odkaz:<br>
@@ -76,7 +76,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
 <h2>Rezervace zrušena</h2>
 <p style=""font-weight: bold;"">Start@FIT 2025</p>
 <p>
-    Tvá rezervace {1} z {0} byla zrušena, místo na akci bylo uvolněno.
+    Tvá rezervace z {0} byla zrušena, místo na akci bylo uvolněno.
 </p>
 <p>
     <br>Studentská unie FIT VUT v Brně

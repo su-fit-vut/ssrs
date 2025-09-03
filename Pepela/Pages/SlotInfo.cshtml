@@ -1,0 +1,69 @@
+@page
+@model Pepela.Pages.SlotInfo
+@{
+    var hadConfirmed = false;
+    var hadOther = false;
+}
+
+<h2>Informace o časovém slotu</h2>
+<p>
+    Aktivita: <strong>@Model.Slot.ActivityName</strong><br/>
+    Datum a čas:
+    <strong>@Model.Slot.Start.ToString("d. M. yyyy H:mm", null) – @Model.Slot.End.ToString("H:mm", null)</strong><br/>
+    Obsazenost: obsazeno @(Model.Slot.TotalSeats - Model.Slot.AvailableSeats) z @Model.Slot.TotalSeats,
+    volno @Model.Slot.AvailableSeats
+    @if (Model.Slot.Note is not null)
+    {
+        <br/>
+        @:Poznámka: @Html.Raw(Model.Slot.Note)
+    }
+</p>
+
+<h3>Potvrzené rezervace</h3>
+<ul>
+    @foreach (var reservation in Model.Slot.Reservations.Where(x => x is { Confirmed: true, Cancelled: false }))
+    {
+        hadConfirmed = true;
+        <li>
+            <span class="font-monospace">@reservation.Email</span> (@reservation.MadeOn.ToString("d. M. H:mm", null))
+            <a class="btn btn-info" asp-page="Index" asp-route-email="@reservation.Email" asp-route-token="_edit">upravit</a>
+            <a class="btn btn-outline-danger" asp-page-handler="Cancel" asp-route-email="@reservation.Email"
+               asp-route-id="@Model.Slot.Id">zrušit pouze tuto aktivitu</a>
+            <a class="btn btn-danger" asp-page="Cancel" asp-route-email="@reservation.Email" asp-route-token="_edit">zrušit
+                celou</a>
+        </li>
+    }
+</ul>
+
+@if (!hadConfirmed)
+{
+    <p>zatím žádné nejsou</p>
+}
+
+<h3>Ostatní rezervace</h3>
+<ul>
+    @foreach (var reservation in Model.Slot.Reservations.Where(x => !x.Confirmed || x.Cancelled))
+    {
+        hadOther = true;
+        <li>
+            <span class="font-monospace">@reservation.Email</span> (@reservation.MadeOn.ToString("d. M. H:mm", null))
+            @if (reservation.Cancelled)
+            {
+                @:[zrušená]
+            }
+            else
+            {
+                @:[nepotvrzená]
+                <a class="btn btn-success" asp-page="Confirm" asp-route-email="@reservation.Email"
+                   asp-route-token="_edit">potvrdit</a>
+                <a class="btn btn-warning" asp-page="Confirm" asp-route-email="@reservation.Email"
+                   asp-route-token="_edit" asp-route-force="true">potvrdit (bez kontroly limitů)</a>
+            }
+        </li>
+    }
+</ul>
+
+@if (!hadOther)
+{
+    <p>zatím žádné nejsou</p>
+}

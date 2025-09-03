@@ -58,8 +58,8 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<LinkService>();
 builder.Services.AddScoped<ReservationService>();
 
-builder.Services.AddRazorPages()
-    .AddRazorRuntimeCompilation();
+builder.Services.AddRazorPages();
+    //.AddRazorRuntimeCompilation();
 if (!string.IsNullOrWhiteSpace(appOptions.KnownProxyNetwork))
 {
     builder.Services.Configure<ForwardedHeadersOptions>(options =>

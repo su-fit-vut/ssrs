@@ -50,7 +50,9 @@ public class SendReminderEmailJob : IJob
                     AvailableSeats = 0,
                     ActivityId = 0,
                     Id = 0,
-                    AlwaysConsumeOnePerReservation = false
+                    AlwaysConsumeOnePerReservation = false,
+                    IsReservable = true,
+                    ReserveDateBound = null
                 });
         }
 

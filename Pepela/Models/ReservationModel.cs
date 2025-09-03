@@ -3,6 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using NodaTime;
 
 namespace Pepela.Models;
 
@@ -24,4 +25,14 @@ public class ReservationModel
     // public bool PubQuizSolo { get; set; }
 
     [BindProperty] public Dictionary<int, int?> SelectedTimeSlotIds { get; set; } = new();
+}
+
+public record ReservationOverview
+{
+    public required string Email { get; init; }
+    public required int Seats { get; init; }
+    public required bool SleepOver { get; init; }
+    public required bool Confirmed { get; init; }
+    public required bool Cancelled { get; init; }
+    public required ZonedDateTime MadeOn { get; init; }
 }

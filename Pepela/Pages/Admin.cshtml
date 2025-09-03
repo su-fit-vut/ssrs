@@ -12,7 +12,11 @@
     </div>
 }
 <div>
-    <a asp-page-handler="SendMails" asp-page="Admin"
-       onclick="return confirm('Fakt?')">Poslat spam</a><br/>
-    <a asp-page-handler="Csv" asp-page="Admin">Stáhnout seznam platných rezervací</a>
+    <p>
+        <a asp-page-handler="SendMails" asp-page="Admin"
+           onclick="return confirm('Fakt?')">Poslat spam</a>
+    </p>
+    <p>
+        <a asp-page-handler="ReservationList" asp-page="Admin">Stáhnout seznam platných rezervací</a>
+    </p>
 </div>

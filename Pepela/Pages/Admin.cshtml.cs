@@ -2,6 +2,7 @@
 // Author: Ondřej Ondryáš
 
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -22,6 +23,12 @@ public class AdminModel : PageModel
 
     public void OnGet()
     {
+    }
+
+    public async Task<IActionResult> OnGetLogout()
+    {
+        await HttpContext.SignOutAsync();
+        return RedirectToPage("Index");
     }
 
     public async Task<IActionResult> OnGetSendMails(CancellationToken cancellationToken)

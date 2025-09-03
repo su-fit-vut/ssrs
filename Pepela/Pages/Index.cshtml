@@ -1,13 +1,13 @@
 ﻿@page
 @using Pepela.Models
 @using Microsoft.Extensions.Options
-@using Org.BouncyCastle.Ocsp
 @using Pepela.Configuration
 @inject IOptionsSnapshot<SeatsOptions> SeatsOptions
 @model IndexModel
 
 @{
     ViewData["Title"] = "Rezervace";
+    var isAdmin = await AuthorizationService.AuthorizeAsync(User, "IsAdmin") is { Succeeded: true };
 }
 
 <div class="row justify-content-center">
@@ -314,7 +314,7 @@
                     <button type="submit"
                             class="btn btn-primary">@(Model.EditMode ? "Upravit rezervaci" : "Vytvořit rezervaci")</button>
 
-                    @if ((await AuthorizationService.AuthorizeAsync(User, "IsAdmin")).Succeeded)
+                    @if (isAdmin)
                     {
                         <button type="submit" asp-page-handler="AdminSubmit"
                                 asp-route-email="@Model.InputModel.Email" asp-route-token="_edit"
@@ -335,3 +335,13 @@
         }
     </div>
 </div>
+
+@if (isAdmin)
+{
+    <div class="row justify-content-center pb-2">
+        <div class="col-10">
+            <a asp-page="Admin" class="btn btn-outline-secondary">Admin</a>
+            <a asp-page="Admin" asp-page-handler="Logout" class="btn btn-outline-secondary">Odhlásit</a>
+        </div>
+    </div>
+}

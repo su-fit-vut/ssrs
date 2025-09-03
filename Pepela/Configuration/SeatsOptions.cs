@@ -9,6 +9,7 @@ public class SeatsOptions
     public int MaximumPerEmail { get; set; }
     public int UnconfirmedValidMinutes { get; set; } = 10;
     public bool ReservationsWithoutActivitiesAllowed { get; set; } = true;
+    public int LockTimeoutMs { get; set; } = 5000;
 
     public int MinPubQuizTeamSize { get; set; } = 2;
     public int MaxPubQuizTeamSize { get; set; } = 8;

@@ -1,6 +1,7 @@
 @page
 @model Pepela.Pages.SlotInfo
 @{
+    ViewData["Title"] = "Informace o časovém slotu";
     var hadConfirmed = false;
     var hadOther = false;
 }
@@ -58,6 +59,10 @@
                    asp-route-token="_edit">potvrdit</a>
                 <a class="btn btn-warning" asp-page="Confirm" asp-route-email="@reservation.Email"
                    asp-route-token="_edit" asp-route-force="true">potvrdit (bez kontroly limitů)</a>
+                <a class="btn btn-outline-danger" asp-page-handler="Cancel" asp-route-email="@reservation.Email"
+                   asp-route-id="@Model.Slot.Id">zrušit pouze tuto aktivitu</a>
+                <a class="btn btn-danger" asp-page="Cancel" asp-route-email="@reservation.Email" asp-route-token="_edit">zrušit
+                    celou</a>
             }
         </li>
     }

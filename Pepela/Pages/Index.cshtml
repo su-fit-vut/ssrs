@@ -121,6 +121,12 @@
                         </span>
 
                         break;
+                    case ReservationAttemptResultCode.Timeout:
+                        <span>
+                            Systém se bohužel hroutí pod náporem rezervací. Prosím, chvíli počkej a&nbsp;zkus to znovu.
+                        </span>
+
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

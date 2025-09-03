@@ -54,6 +54,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         npgsql => npgsql.UseNodaTime());
 });
 
+builder.Services.AddKeyedSingleton<SemaphoreSlim>("SlotCountLock", 
+    (_, _) => new SemaphoreSlim(1, 1));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<LinkService>();
 builder.Services.AddScoped<ReservationService>();

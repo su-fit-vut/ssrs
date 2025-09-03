@@ -14,6 +14,7 @@ public enum ReservationAttemptResultCode
     NoActivityChosen,
     Updated,
     Confirmed,
+    Timeout,
     Error
 }
 
@@ -25,6 +26,7 @@ public enum ReservationCompletionResultCode
     TimeslotError,
     NotFound,
     InvalidToken,
+    Timeout,
     Error
 }
 
@@ -40,6 +42,7 @@ public record struct ReservationAttemptResult(
     public static readonly ReservationAttemptResult NoActivityChosen = new(ReservationAttemptResultCode.NoActivityChosen);
     public static readonly ReservationAttemptResult Updated = new(ReservationAttemptResultCode.Updated);
     public static readonly ReservationAttemptResult Confirmed = new(ReservationAttemptResultCode.Confirmed);
+    public static readonly ReservationAttemptResult Timeout = new(ReservationAttemptResultCode.Timeout);
 
     public static ReservationAttemptResult Error(string error)
         => new(ReservationAttemptResultCode.Error, null, null, error);
@@ -64,6 +67,9 @@ public record struct ReservationCompletionResult(
 
     public static readonly ReservationCompletionResult InvalidToken
         = new(ReservationCompletionResultCode.InvalidToken, null);
+    
+    public static readonly ReservationCompletionResult Timeout
+        = new(ReservationCompletionResultCode.Timeout, null);
 
     public static ReservationCompletionResult Error(string error)
         => new(ReservationCompletionResultCode.Error, null, error);

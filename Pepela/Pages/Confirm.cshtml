@@ -64,6 +64,20 @@
             <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>.
         </p>
         break;
+    case ReservationCompletionResultCode.TimeslotError:
+        <h2>Chyba</h2>
+        <p>
+            Bohužel jsi rezervaci nepotvrdil*a dostatečně brzy a&nbsp;(alespoň) v&nbsp;jedné z&nbsp;aktivit
+            (@Model.Result.CollidingTimeSlot?.ActivityName) už místo získal někdo jiný. Zkus si vytvořit novou
+            rezervaci.
+        </p>
+        break;
+    case ReservationCompletionResultCode.Timeout:
+        <span>
+            Systém se bohužel hroutí pod náporem rezervací. Prosím, chvíli počkej a&nbsp;zkus to znovu.
+        </span>
+
+        break;
     default:
             throw new ArgumentOutOfRangeException();
 }

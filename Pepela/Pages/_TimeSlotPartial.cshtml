@@ -35,7 +35,7 @@
             }
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="@name" id="@name-@slot.Id" value="@slot.Id"
-                       @(slotAvailable ? "" : "disabled") @(Model.Item2 ? "checked" : "")/>
+                       @(slotAvailable ? "" : "disabled") @(Model.Item2 && slotAvailable ? "checked" : "")/>
                 <label class="form-check-label small" for="@name-@slot.Id">
                     Zarezervovat
                 </label>

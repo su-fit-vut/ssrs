@@ -1,15 +1,38 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>@ViewData["Title"] | Start@FIT | SU FIT VUT</title>
+    <title>@ViewData["Title"] - Rezervace - Start@FIT</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dosis&family=Exo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    
+    <meta name="author" content="Studentská unie FIT VUT v Brně" />
+    <meta
+        name="description"
+        content="Uvítací, seznamovací, školicí a zábavná akce pro prváky na FIT VUT."
+    />
+
+    <meta property="og:title" content="@ViewData["Title"] - Rezervace - Start@FIT 2025" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@Html.Raw("https://www.startatfit.cz/rezervace" + Context.Request.Path)" />
+    <link rel="canonical" href="@Html.Raw("https://www.startatfit.cz/rezervace" + Context.Request.Path)" />
+    <meta
+        property="og:image"
+        content="https://www.startatfit.cz/img/meta.jpg"
+    />
+
+    <link rel="icon" type="image/x-icon" href="/img/favicon.png" />
+    <!-- Chrome, Firefox OS and Opera -->
+    <meta name="theme-color" content="#2596be" />
+    <!-- Windows Phone -->
+    <meta name="msapplication-navbutton-color" content="#2596be" />
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="#2596be" />
 </head>
 <body>
 <header>

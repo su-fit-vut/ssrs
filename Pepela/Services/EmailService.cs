@@ -15,45 +15,50 @@ namespace Pepela.Services;
 
 public class EmailService
 {
+    private const string EventName = "Noc na FITu";
+    private const string EventDate = "26. 9. 2025";
+    private const string ContactEmail = "xobrale00@stud.fit.vut.cz";
+    
     #region Messages
 
-    private const string ExtrasPartial =
-        """
-        <p>
-        Součástí tvé rezervace je:
-        </p>
-        <ul>
-        {0}
-        </ul>
-        """;
+    private const string ExtrasPartial
+        = """
+          <p>
+          Součástí tvé rezervace je taky:
+          </p>
+          <ul>
+          {0}
+          </ul>
+          """;
 
-    private const string ConfirmationMail = @"
-<h2>Potvrď rezervaci</h2>
-<p style=""font-weight: bold;"">Start@FIT 2025</p>
-<p>
-    Díky za rezervaci! Potvrď ji prosím kliknutím na odkaz:<br>
-    <a style=""font-weight: bold;"" href=""{0}"">{0}</a>
-</p>
-{3}
-<p>
-    Nepotvrzené rezervace jsou platné pouze {1} minut od založení.<br>
-    Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
-    Rezervaci můžeš kdykoliv zrušit kliknutím <a href=""{2}"">sem</a>. 
-</p>
-<p>
-    <br>Studentská unie FIT VUT v Brně
-    <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
-nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
-</p>
-";
+    private const string ConfirmationMail
+        = $$"""
+          <h2>Potvrď rezervaci místa</h2>
+          <p style="font-weight: bold;">{{EventName}}, {{EventDate}}</p>
+          <p>
+              Díky za rezervaci! Potvrď ji prosím kliknutím na odkaz:<br>
+              <a style="font-weight: bold;" href="{0}">{0}</a>
+          </p>
+          {3}
+          <p>
+              Nepotvrzené rezervace jsou platné pouze {1} minut od založení.<br>
+              Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
+              Rezervaci můžeš kdykoliv zrušit kliknutím <a href="{2}">sem</a>. 
+          </p>
+          <p>
+              <br>Studentská unie FIT VUT v Brně
+              <br><a href="https://su.fit.vut.cz">https://su.fit.vut.cz</a>
+              <br>s případnými dotazy se ozvi na <a href="mailto:{{ContactEmail}}">{{ContactEmail}}</a>
+                  nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
+          </p>
+          """;
 
     private const string DoneMail
-        = """
+        = $$"""
           <h2>Rezervace potvrzena</h2>
-          <p style="font-weight: bold;">Start@FIT 2025</p>
+          <p style="font-weight: bold;">{{EventName}}, {{EventDate}}</p>
           <p>
-              Rezervace je potvrzena!<br>
+              Rezervace je potvrzena! Zarezervováno míst: {0}.<br>
               Rezervaci můžeš upravit kliknutím na <a href="{1}">tento odkaz</a>.
           </p>
           {2}
@@ -67,55 +72,60 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
               
               <br>Studentská unie FIT VUT v Brně
               <br><a href="https://su.fit.vut.cz">https://su.fit.vut.cz</a>
-              <br>s případnými dotazy se ozvi na <a href="mailto:xondry02@stud.fit.vut.cz">xondry02@stud.fit.vut.cz</a>
-          nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
+              <br>s případnými dotazy se ozvi na <a href="mailto:{{ContactEmail}}">{{ContactEmail}}</a>
+                  nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
           </p>
           """;
 
-    private const string CancellationMail = @"
-<h2>Rezervace zrušena</h2>
-<p style=""font-weight: bold;"">Start@FIT 2025</p>
-<p>
-    Tvá rezervace z {0} byla zrušena, místo na akci bylo uvolněno.
-</p>
-<p>
-    <br>Studentská unie FIT VUT v Brně
-    <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
-nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
-</p>
-";
+    private const string CancellationMail
+        = $$"""
+          <h2>Rezervace zrušena</h2>
+          <p style="font-weight: bold;">{{EventName}}, {{EventDate}}</p>
+          <p>
+              Tvá rezervace {1} z {0} byla zrušena, místo na akci bylo uvolněno.
+              <br>Tento e-mail posíláme i&nbsp;v&nbsp;případě, kdy upravíš ještě nepotrvzenou rezervaci.
+              Pokud je to tvůj případ, nezapomeň potvrdit novou rezervaci v&nbsp;dalším e-mailu, který ti přijde záhy.
+          </p>
+          <p>
+              <br>Studentská unie FIT VUT v Brně
+              <br><a href="https://su.fit.vut.cz">https://su.fit.vut.cz</a>
+              <br>s případnými dotazy se ozvi na <a href="mailto:{{ContactEmail}}">{{ContactEmail}}</a>
+                  nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
+          </p>
+          """;
 
-    private const string ReminderMail = @"
-<h2>Start@FIT</h2>
-<p style=""font-weight: bold;"">27. 9. 2024</p>
-<p>
-    Ahoj! Už v&nbsp;pátek nás čeká Noc vědců.
-</p>
+    private const string ReminderMail
+        = $$"""
+          <h2>{{EventName}}</h2>
+          <p style="font-weight: bold;">{{EventDate}}</p>
+          <p>
+              Ahoj! Už v&nbsp;pátek nás čeká Noc na FITu.
+          </p>
 
-<h3>Organizační informace</h3>
-<p>
-    Celá akce bude začínat cca v&nbsp;18 hodin, stejně tak Noc vědců.
-    U&nbsp;vstupu se nemusíš nijak prokazovat a můžeš přijít kudy chceš, akce probíhá po celé škole. Veškeré potřebné informace
-     včetně programu se dozvíš na <a href=""https://www.instagram.com/sufitvut"">instagramu SU</a>.
-</p>
-<p>
-    Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href=""{1}"">na tento odkaz</a>.
-</p>
-{2}
-<p>
-    Start@FIT se bude odehrávat v&nbsp;areálu FIT VUT, ve kterém se nachází také koleje, dopřejme tedy prosím jejich
-    obyvatelům v noci klid a&nbsp;umírněme zvukové projevy. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty
-     (jakož i&nbsp;v&nbsp;celém areálu fakulty), to platí i&nbsp;pro elektronické cigarety a&nbsp;obdobné záležitosti. V&nbsp;případě potřeby proto prosím využijte 
-    <a href=""https://maps.app.goo.gl/NRwpXP4ReYYpKEHi7"">prostor před brankou</a>.
-</p>
-<p>
-    <br>Studentská unie FIT VUT v Brně
-    <br><a href=""https://su.fit.vut.cz"">https://su.fit.vut.cz</a>
-    <br>s případnými dotazy se ozvi na <a href=""mailto:xondry02@stud.fit.vut.cz"">xondry02@stud.fit.vut.cz</a>
-nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního formuláře</a>
-</p>
-";
+          <h3>Organizační informace</h3>
+          <p>
+              Celá akce bude začínat cca v&nbsp;18 hodin spolu s <a href="https://www.nocvedcu.cz/misto/453-fakulta-informacnich-technologii">Nocí vědců</a>.
+              U&nbsp;vstupu se nemusíš nijak prokazovat a můžeš přijít kudy chceš, akce probíhá po celé škole. Veškeré potřebné informace
+               včetně programu se dozvíš na <a href="https://www.instagram.com/sufitvut">instagramu SU</a>.
+          </p>
+          <p>
+              Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href="{1}">na tento odkaz</a>.
+          </p>
+          {2}
+          <p>
+              Noc na FITu se bude odehrávat v&nbsp;areálu FIT VUT, ve kterém se nachází také koleje, dopřejme tedy prosím jejich
+              obyvatelům v noci klid a&nbsp;umírněme zvukové projevy. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty
+               (jakož i&nbsp;v&nbsp;celém areálu fakulty), to platí i&nbsp;pro elektronické cigarety a&nbsp;obdobné záležitosti.
+               V&nbsp;případě potřeby proto prosím využijte 
+               <a href="https://maps.app.goo.gl/NRwpXP4ReYYpKEHi7">prostor před brankou</a>.
+          </p>
+          <p>
+              <br>Studentská unie FIT VUT v Brně
+              <br><a href="https://su.fit.vut.cz">https://su.fit.vut.cz</a>
+              <br>s případnými dotazy se ozvi na <a href="mailto:{{ContactEmail}}">{{ContactEmail}}</a>
+                  nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
+          </p>
+          """;
 
     #endregion
 
@@ -159,14 +169,14 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
     {
         var msg = string.Format(ConfirmationMail, confirmLink, _seatsOptions.Value.UnconfirmedValidMinutes,
             cancelLink, this.MakeExtrasPartial(extras));
-        await this.SendAsync("Start@FIT: Potvrď rezervaci", msg, to);
+        await this.SendAsync($"{EventName}: Potvrď rezervaci", msg, to);
     }
 
     public async Task SendDoneMail(string to, int reservedSeats, string cancelLink, string updateLink,
         IEnumerable<TimeSlot>? extras)
     {
         var msg = string.Format(DoneMail, reservedSeats, updateLink, this.MakeExtrasPartial(extras), cancelLink);
-        await this.SendAsync("Start@FIT: Rezervace potvrzena", msg, to, true);
+        await this.SendAsync($"{EventName}: Rezervace potvrzena", msg, to, true);
     }
 
     public async Task SendCancelledEmail(string to, int seats, Instant madeOn)
@@ -180,7 +190,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
             _ => $"{seats} míst"
         };
         var msg = string.Format(CancellationMail, madeOnStr, seatsStr);
-        await this.SendAsync("Start@FIT: Rezervace zrušena", msg, to);
+        await this.SendAsync($"{EventName}: Rezervace zrušena", msg, to);
     }
 
     public async Task SendReminderEmail(string to, int seats, string cancelLink, IEnumerable<TimeSlot>? extras)
@@ -193,7 +203,7 @@ nebo pomocí <a href=""https://su.fit.vut.cz/kontakt"">našeho kontaktního form
         };
 
         var msg = string.Format(ReminderMail, seatsStr, cancelLink, this.MakeExtrasPartial(extras));
-        await this.SendAsync("Start@FIT", msg, to);
+        await this.SendAsync(EventName, msg, to);
     }
 
     private async Task<bool> SendAsync(string subject, string html, string to, bool bcc = false,

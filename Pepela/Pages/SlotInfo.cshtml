@@ -25,7 +25,7 @@
     @foreach (var reservation in Model.Slot.Reservations.Where(x => x is { Confirmed: true, Cancelled: false }))
     {
         hadConfirmed = true;
-        <li>
+        <li class="mb-1">
             <span class="font-monospace">@reservation.Email</span> (@reservation.MadeOn.ToString("d. M. H:mm", null))
             <a class="btn btn-info" asp-page="Index" asp-route-email="@reservation.Email" asp-route-token="_edit">upravit</a>
             <a class="btn btn-outline-danger" asp-page-handler="Cancel" asp-route-email="@reservation.Email"
@@ -46,7 +46,7 @@
     @foreach (var reservation in Model.Slot.Reservations.Where(x => !x.Confirmed || x.Cancelled))
     {
         hadOther = true;
-        <li>
+        <li class="mb-1">
             <span class="font-monospace">@reservation.Email</span> (@reservation.MadeOn.ToString("d. M. H:mm", null))
             @if (reservation.Cancelled)
             {

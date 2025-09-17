@@ -120,7 +120,7 @@ public class ReservationService
         // PubQuiz: Cannot modify quiz associations this way
         model.SelectedTimeSlotIds.Remove(PubQuizTeamsActivityId);
         model.SelectedTimeSlotIds.Remove(PubQuizSoloActivityId);
-        
+
         try
         {
             // Check if there is space in the newly selected slots
@@ -148,6 +148,11 @@ public class ReservationService
                 return new ReservationAttemptResult(ReservationAttemptResultCode.TimeslotNotReservable,
                     this.ToModel(unreservable, 0));
 
+            var timeSlotsTakeOneSeat = await _dbContext.TimeSlots
+                .Where(x => slotIdsToAdd.Contains(x.Id))
+                .Select(x => new { x.Id, x.AlwaysConsumeOnePerReservation })
+                .ToDictionaryAsync(x => x.Id, x => x.AlwaysConsumeOnePerReservation);
+
             // Create associations for the newly added slots
             foreach (var newSlotId in slotIdsToAdd)
             {
@@ -155,7 +160,7 @@ public class ReservationService
                 {
                     ReservationId = existing.Id,
                     TimeSlotId = newSlotId,
-                    TakenTimeSlotSeats = 1 // Not used now
+                    TakenTimeSlotSeats = timeSlotsTakeOneSeat.GetValueOrDefault(newSlotId, false) ? 1 : model.Seats
                 });
                 this.ClearTimeSlotCache(newSlotId);
             }
@@ -166,7 +171,7 @@ public class ReservationService
                 // PubQuiz: Don't remove quiz associations, quiz cannot be modified this way
                 if (existingAssociation.ActivityId is PubQuizSoloActivityId or PubQuizTeamsActivityId)
                     continue;
-                
+
                 if (!model.SelectedTimeSlotIds.ContainsKey(existingAssociation.ActivityId))
                 {
                     activityIdsToRemoveSlotsFor.Add(existingAssociation.ActivityId);
@@ -175,10 +180,10 @@ public class ReservationService
             }
 
             existing.AssociatedTimeSlots.RemoveAll(x => activityIdsToRemoveSlotsFor.Contains(x.ActivityId));
-            
+
             // Update other modifiable fields
             existing.SleepOver = model.SleepOver;
-            
+
             try
             {
                 await _dbContext.SaveChangesAsync();
@@ -286,6 +291,10 @@ public class ReservationService
                     if (!quizSolo)
                         model.PubQuizSeats ??= _seatsOptions.Value.MinPubQuizTeamSize;
                 }
+                else
+                {
+                    model.PubQuizSeats = 0;
+                }
             }
 
             using var rng = RandomNumberGenerator.Create();
@@ -296,15 +305,24 @@ public class ReservationService
             if (existing != null)
                 _dbContext.Remove(existing);
 
+            var selectedTimeSlotIdsOnly = model.SelectedTimeSlotIds
+                .Where(kv => kv.Value.HasValue)
+                .Select(kv => kv.Value!.Value)
+                .ToList();
+
+            var timeSlotsTakeOneSeat = await _dbContext.TimeSlots
+                .Where(x => selectedTimeSlotIdsOnly.Contains(x.Id))
+                .Select(x => new { x.Id, x.AlwaysConsumeOnePerReservation })
+                .ToDictionaryAsync(x => x.Id, x => x.AlwaysConsumeOnePerReservation);
+
             var associatedTimeSlots = new List<ReservationTimeSlotAssociation>();
-            foreach (var selection in model.SelectedTimeSlotIds)
+            foreach (var selection in selectedTimeSlotIdsOnly)
             {
-                if (selection.Value != null)
-                    associatedTimeSlots.Add(new ReservationTimeSlotAssociation()
-                    {
-                        TimeSlotId = selection.Value.Value,
-                        TakenTimeSlotSeats = 1 // Not used now
-                    });
+                associatedTimeSlots.Add(new ReservationTimeSlotAssociation()
+                {
+                    TimeSlotId = selection,
+                    TakenTimeSlotSeats = timeSlotsTakeOneSeat.GetValueOrDefault(selection, false) ? 1 : model.Seats
+                });
             }
 
             entity = new ReservationEntity()
@@ -607,7 +625,9 @@ public class ReservationService
                 reservation.SleepOver,
                 reservation.HasPubQuizTeam,
                 reservation.PubQuizTeamName,
-                reservation.PubQuizSeats,
+                PubQuizSeats = (reservation.HasPubQuizTeam || reservation.PubQuizSeats == 1)
+                    ? reservation.PubQuizSeats
+                    : 0,
                 Slots = reservation.AssociatedTimeSlots.Select(ts => new
                 {
                     ts.Activity.Name,
@@ -887,7 +907,7 @@ public class ReservationService
     {
         var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
         var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
-    
+
         return (teamsSlots[0].AvailableSeats > 0, soloSlots[0].AvailableSeats > 0);
     }
 }

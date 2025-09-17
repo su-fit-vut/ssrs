@@ -345,6 +345,10 @@
                     }
                     else
                     {
+                        if (activity.Description != null)
+                        {
+                            @Html.Raw(activity.Description)
+                        }
                         <div class="container p-0">
                             <div class="row">
                                 @foreach (var slot in activity.TimeSlots)

@@ -753,7 +753,8 @@ public class ReservationService
             {
                 Id = x.Id,
                 Name = x.Name,
-                TimeSlots = new List<TimeSlot>()
+                TimeSlots = new List<TimeSlot>(),
+                Description = x.Description
             }).ToListAsync();
 
         foreach (var activity in activities)

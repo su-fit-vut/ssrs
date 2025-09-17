@@ -20,4 +20,29 @@
             targetInput.click();
         });
     });
+
+    function updatePubQuizInputs(checkbox) {
+        document.querySelectorAll('.pubquiz-team-input').forEach(function (elem) {
+            if (checkbox.checked) {
+                elem.setAttribute('disabled', 'disabled');
+                elem.setAttribute('readonly', 'readonly');
+            } else {
+                elem.removeAttribute('disabled');
+                elem.removeAttribute('readonly');
+            }
+        });
+    }
+
+    document.querySelectorAll("#reserveQuizSoloSeat").forEach(function (checkbox) {
+        checkbox.addEventListener('change', function (e) {
+            updatePubQuizInputs(checkbox);
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkbox = document.getElementById("reserveQuizSoloSeat");
+        if (checkbox) {
+            updatePubQuizInputs(checkbox);
+        }
+    });
 })();

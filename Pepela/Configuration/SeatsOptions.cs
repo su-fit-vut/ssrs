@@ -11,6 +11,6 @@ public class SeatsOptions
     public bool ReservationsWithoutActivitiesAllowed { get; set; } = true;
     public int LockTimeoutMs { get; set; } = 5000;
 
-    public int MinPubQuizTeamSize { get; set; } = 2;
-    public int MaxPubQuizTeamSize { get; set; } = 8;
+    public int MinPubQuizTeamSize { get; set; } = 1;
+    public int MaxPubQuizTeamSize { get; set; } = 6;
 }

@@ -22,6 +22,11 @@ public class ReservationService
     private const string SeatsLeftCacheKey = "SeatsLeft";
     private const string TimeSlotSeatsLeftCacheKey = "TimeSlot.{0}.SeatsLeft";
 
+    public const int PubQuizTeamsActivityId = 1;
+    public const int PubQuizSoloActivityId = 2;
+    public const int PubQuizTeamsTimeSlotId = 1;
+    public const int PubQuizSoloTimeSlotId = 2;
+
     private readonly AppDbContext _dbContext;
     private readonly EmailService _emailService;
     private readonly LinkService _linkService;
@@ -112,6 +117,10 @@ public class ReservationService
         if (!force && !await _slotCountLock.WaitAsync(_seatsOptions.Value.LockTimeoutMs))
             return ReservationAttemptResult.Timeout;
 
+        // PubQuiz: Cannot modify quiz associations this way
+        model.SelectedTimeSlotIds.Remove(PubQuizTeamsActivityId);
+        model.SelectedTimeSlotIds.Remove(PubQuizSoloActivityId);
+        
         try
         {
             // Check if there is space in the newly selected slots
@@ -154,6 +163,10 @@ public class ReservationService
             // Remove associations for activities that are no longer selected
             foreach (var existingAssociation in existing.AssociatedTimeSlots)
             {
+                // PubQuiz: Don't remove quiz associations, quiz cannot be modified this way
+                if (existingAssociation.ActivityId is PubQuizSoloActivityId or PubQuizTeamsActivityId)
+                    continue;
+                
                 if (!model.SelectedTimeSlotIds.ContainsKey(existingAssociation.ActivityId))
                 {
                     activityIdsToRemoveSlotsFor.Add(existingAssociation.ActivityId);
@@ -162,7 +175,10 @@ public class ReservationService
             }
 
             existing.AssociatedTimeSlots.RemoveAll(x => activityIdsToRemoveSlotsFor.Contains(x.ActivityId));
-
+            
+            // Update other modifiable fields
+            existing.SleepOver = model.SleepOver;
+            
             try
             {
                 await _dbContext.SaveChangesAsync();
@@ -241,17 +257,35 @@ public class ReservationService
 
                 foreach (var selection in model.SelectedTimeSlotIds)
                 {
+                    // PubQuiz has custom logic
+                    if (selection is { Key: PubQuizSoloActivityId or PubQuizTeamsActivityId } or
+                        { Value: PubQuizSoloTimeSlotId or PubQuizTeamsTimeSlotId })
+                        continue;
+
                     if (selection.Value != null &&
                         !await this.CheckSlotSeatsLeftForReservation(selection.Value.Value, existing, model.Seats))
                         return await this.GetTimeslotErrorResult(selection.Value.Value);
                 }
 
-                // if (model.PubQuizTeamName != null || model.PubQuizSolo)
-                // {
-                //     var quizSlotId = (model.PubQuizSolo || model.PubQuizSeats == 1) ? PubQuizSoloTimeSlotId : PubQuizTeamsTimeSlotId;
-                //     if (!await this.CheckSlotSeatsLeftForReservation(quizSlotId, existing, model.Seats))
-                //         return await GetTimeslotErrorResult(quizSlotId);
-                // }
+                // PubQuiz:
+                if (model.WantsPubQuiz)
+                {
+                    var quizSolo = model.PubQuizReserveSolo;
+                    var quizSlotId = quizSolo
+                        ? PubQuizSoloTimeSlotId
+                        : PubQuizTeamsTimeSlotId;
+                    var quizActivityId = quizSolo
+                        ? PubQuizSoloActivityId
+                        : PubQuizTeamsActivityId;
+
+                    if (!await this.CheckSlotSeatsLeftForReservation(quizSlotId, existing, model.Seats))
+                        return await GetTimeslotErrorResult(quizSlotId);
+
+                    model.SelectedTimeSlotIds[quizActivityId] = quizSlotId;
+
+                    if (!quizSolo)
+                        model.PubQuizSeats ??= _seatsOptions.Value.MinPubQuizTeamSize;
+                }
             }
 
             using var rng = RandomNumberGenerator.Create();
@@ -273,15 +307,6 @@ public class ReservationService
                     });
             }
 
-            // if (model.PubQuizTeamName != null)
-            // {
-            //     model.PubQuizSeats ??= _seatsOptions.Value.MinPubQuizTeamSize;
-            //     if (model.PubQuizSeats == 1 || model.PubQuizSolo)
-            //         AddSlotEntity(PubQuizSoloTimeSlotId);
-            //     else
-            //         AddSlotEntity(PubQuizTeamsTimeSlotId);
-            // }
-
             entity = new ReservationEntity()
             {
                 ManagementToken = token,
@@ -291,8 +316,10 @@ public class ReservationService
                 ConfirmedOn = mustConfirm ? null : SystemClock.Instance.GetCurrentInstant(),
 
                 SleepOver = model.SleepOver,
-                // PubQuizTeamName = model.PubQuizTeamName,
-                // PubQuizSeats = model.PubQuizSeats ?? _seatsOptions.Value.MinPubQuizTeamSize,
+                PubQuizTeamName = model.PubQuizTeamName,
+                PubQuizSeats = model.PubQuizReserveSolo
+                    ? 1
+                    : (model.PubQuizSeats ?? _seatsOptions.Value.MinPubQuizTeamSize),
 
                 TimeSlotAssociations = associatedTimeSlots
             };
@@ -576,11 +603,11 @@ public class ReservationService
             var resultObj = new
             {
                 reservation.Email,
-                // reservation.Seats,
-                // reservation.SleepOver,
-                // reservation.HasPubQuizTeam,
-                // reservation.PubQuizTeamName,
-                // reservation.PubQuizSeats,
+                reservation.Seats,
+                reservation.SleepOver,
+                reservation.HasPubQuizTeam,
+                reservation.PubQuizTeamName,
+                reservation.PubQuizSeats,
                 Slots = reservation.AssociatedTimeSlots.Select(ts => new
                 {
                     ts.Activity.Name,
@@ -855,11 +882,11 @@ public class ReservationService
         return ret;
     }
 
-    // public async Task<(bool Teams, bool Solo)> GetPubQuizAvailability(bool cached)
-    // {
-    //     var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
-    //     var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
-    //
-    //     return (teamsSlots[0].AvailableSeats > 0, soloSlots[0].AvailableSeats > 0);
-    // }
+    public async Task<(bool Teams, bool Solo)> GetPubQuizAvailability()
+    {
+        var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
+        var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
+    
+        return (teamsSlots[0].AvailableSeats > 0, soloSlots[0].AvailableSeats > 0);
+    }
 }

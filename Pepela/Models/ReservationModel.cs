@@ -3,6 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NodaTime;
 
 namespace Pepela.Models;
@@ -16,15 +17,18 @@ public class ReservationModel
 
     public bool SleepOver { get; set; } = false;
 
-    // [MaxLength(32)]
-    // public string? PubQuizTeamName { get; set; }
-    //
-    // [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
-    // public int? PubQuizSeats { get; set; }
-    //
-    // public bool PubQuizSolo { get; set; }
+    [MaxLength(32)] public string? PubQuizTeamName { get; set; }
+
+    [Range(2, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
+    public int? PubQuizSeats { get; set; }
+
+    public bool PubQuizReserveSolo { get; set; }
 
     [BindProperty] public Dictionary<int, int?> SelectedTimeSlotIds { get; set; } = new();
+
+    [BindNever]
+    public bool WantsPubQuiz =>
+        (!string.IsNullOrWhiteSpace(PubQuizTeamName) && PubQuizSeats is > 2) || PubQuizReserveSolo;
 }
 
 public record ReservationOverview

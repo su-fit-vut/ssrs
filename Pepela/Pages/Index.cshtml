@@ -2,6 +2,7 @@
 @using Pepela.Models
 @using Microsoft.Extensions.Options
 @using Pepela.Configuration
+@using Pepela.Services
 @inject IOptionsSnapshot<SeatsOptions> SeatsOptions
 @model IndexModel
 
@@ -36,7 +37,7 @@
                         </p>
                         <span>
                             Nepotvrzené rezervace jsou platné pouze @SeatsOptions.Value.UnconfirmedValidMinutes minut od založení.<br>
-                            Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou.<br>
+                            Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou (stará se tím  <b>automaticky zruší</b>, o&nbsp;čemž ti přijde e-mail).<br>
                             Rezervaci můžeš kdykoliv zrušit kliknutím na odkaz v&nbsp;e-mailu.
                         </span>
 
@@ -70,7 +71,7 @@
 
                         break;
                     case ReservationAttemptResultCode.TimeslotError:
-                        @*var slotId = Model.Result?.CollidingTimeSlot?.Id ?? -1;
+                        var slotId = Model.Result?.CollidingTimeSlot?.Id ?? -1;
                         if (slotId == ReservationService.PubQuizTeamsTimeSlotId)
                         {
                             <span>
@@ -83,12 +84,13 @@
                                 Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro lidi bez týmu.
                             </span>
                         }
-                        else*@
-                    {
-                        <span>
+                        else
+                        {
+                            <span>
                             Ve zvoleném časovém slotu pro aktivitu „@Model.Result?.CollidingTimeSlot?.ActivityName“ už bohužel není místo.
                         </span>
-                    }
+                        }
+
                         break;
                     case ReservationAttemptResultCode.TimeslotNotReservable:
                         <span>
@@ -211,8 +213,16 @@
                     {
                         <div class="col-4">
                             <label for="inputSeats" class="form-label">Počet míst:</label>
-                            <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
-                                   class="form-control" id="inputSeats" required="required">
+                            @if (Model.EditMode)
+                            {
+                                <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
+                                       class="form-control" id="inputSeats" readonly="readonly">
+                            }
+                            else
+                            {
+                                <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
+                                       class="form-control" id="inputSeats" required="required">    
+                            }
                         </div>
                     }
                     else
@@ -220,21 +230,50 @@
                         <input type="hidden" asp-for="InputModel.Seats" value="1"></input>
                     }
                 </div>
-
-                @*
+                
                 <div class="form-check mb-3">
                     <input type="checkbox" class="form-check-input" id="addSleepover" asp-for="InputModel.SleepOver">
                     <label class="form-check-label" for="addSleepover">
                         Chci na FITu přespat
                     </label>
                 </div>
-                *@
-
                 <hr/>
-
-                @*
+                
                 <h3>Pubkvíz</h3>
-                @if (!Model.PubQuizTeamsAvailable && !Model.PubQuizSoloAvailable)
+                @if (Model.EditMode)
+                {
+                    if (Model.InputModel.PubQuizReserveSolo)
+                    {
+                        <p>
+                            Máš zarezervované sólo místo na pubkvízu.
+                        </p>
+                        <p>
+                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.
+                        </p>
+                    }
+                    else if (Model.InputModel.PubQuizTeamName != null)
+                    {
+                        <p>
+                            Jméno týmu: <b>@Model.InputModel.PubQuizTeamName</b><br/>
+                            Počet členů: <b>@Model.InputModel.PubQuizSeats</b>
+                        </p>
+                        <p>
+                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
+                            Pokud se jen změnil počet lidí, nemusíš nic dělat.
+                        </p>
+                    }
+                    else
+                    {
+                        <p>
+                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Pokud se chceš zúčastnit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
+                        </p>  
+                    }
+
+                }
+                else if (!Model.PubQuizTeamsAvailable && !Model.PubQuizSoloAvailable)
                 {
                     <p>
                         Pubkvíz už je bohužel plný.
@@ -245,50 +284,54 @@
                 {
                     <p>
                         Do pubkvízu už je možné rezervovat pouze místa pro jednotlivce (bez týmu).
-                        Pozor, bude zarezervováno pouze jedno „sólo“ místo nehledě na počet osob v&nbsp;rezervaci.
+                        Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
                     </p>
                     <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizSolo">
+                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
                         <input type="hidden" asp-for="InputModel.PubQuizSeats" value="1">
                         <input type="hidden" asp-for="InputModel.PubQuizTeamName" value="solo">
                         <label class="form-check-label" for="reserveQuizSoloSeat">
-                            Zarezervovat místo na pubkvízu
+                            Chci zarezervovat <b>sólo</b> místo na pubkvízu
                         </label>
                     </div>
                 }
                 else
                 {
                     <p>
-                        Pro účast na pubkvízu si nejlépe předem domluv 
+                        Pro účast na pubkvízu si předem domluv 
                         <b>tým @SeatsOptions.Value.MinPubQuizTeamSize–@SeatsOptions.Value.MaxPubQuizTeamSize lidí</b>. 
                         Níže vyplň název a&nbsp;velikost týmu.
                         <br/><b>Pubkvíz rezervuje pouze jeden z&nbsp;týmu!</b>
-                        @if (Model.PubQuizSoloAvailable)
-                        {
-                            <br/>
-                            <span>
-                                Pokud nemáš tým, <b>vyplň libovolné neprázdné jméno týmu</b> a&nbsp;jako počet členů zvol <b>1</b>.
-                                Na místě z&nbsp;vás pak tým poskládáme
-                                (pozor, v&nbsp;takovém případě bude zarezervováno pouze jedno „sólo“ místo nehledě
-                                na počet osob v&nbsp;rezervaci).
-                            </span>
-                        }
                     </p>
+                    @if (Model.PubQuizSoloAvailable)
+                    {
+                        <p>
+                            Pokud nemáš tým, můžeš si zarezervovat <b>sólo místo</b>.
+                            Na místě pak poskládáme jeden tým ze všech, kteří si toto místo zaregistrovali.<br/>
+                            Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
+                        </p>
+                    }
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
+                        <label class="form-check-label" for="reserveQuizSoloSeat">
+                            Chci zarezervovat <b>sólo</b> místo na pubkvízu
+                        </label>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-8">
                             <label for="inputQuizTeamName" class="form-label">Jméno týmu:</label>
-                            <input type="text" class="form-control"
+                            <input type="text" class="form-control pubquiz-team-input"
                                    id="inputQuizTeamName" asp-for="InputModel.PubQuizTeamName">
                         </div>
                         <div class="col-4">
                             <label for="inputQuizTeamSeats" class="form-label">Počet členů:</label>
-                            <input type="number" class="form-control" min="@Model.MinPubQuizTeamSize"
+                            <input type="number" class="form-control pubquiz-team-input" min="@Model.MinPubQuizTeamSize"
                                    max="@SeatsOptions.Value.MaxPubQuizTeamSize"
                                    id="inputQuizTeamSeats" asp-for="InputModel.PubQuizSeats">
                         </div>
                     </div>
                 }
-                <hr/>*@
+                <hr/>
 
                 @foreach (var activity in Model.Slots.Values)
                 {

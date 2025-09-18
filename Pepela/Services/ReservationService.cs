@@ -182,7 +182,7 @@ public class ReservationService
             existing.AssociatedTimeSlots.RemoveAll(x => activityIdsToRemoveSlotsFor.Contains(x.ActivityId));
 
             // Update other modifiable fields
-            existing.SleepOver = model.SleepOver;
+            // existing.SleepOver = model.SleepOver;
 
             try
             {
@@ -333,7 +333,7 @@ public class ReservationService
                 Seats = model.Seats,
                 ConfirmedOn = mustConfirm ? null : SystemClock.Instance.GetCurrentInstant(),
 
-                SleepOver = model.SleepOver,
+                // SleepOver = model.SleepOver,
                 PubQuizTeamName = model.PubQuizTeamName,
                 PubQuizSeats = model.PubQuizReserveSolo
                     ? 1

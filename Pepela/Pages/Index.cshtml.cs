@@ -157,7 +157,7 @@ public class IndexModel : PageModel
             {
                 EditMode = true;
                 InputModel.Seats = reservation.Seats;
-                InputModel.SleepOver = reservation.SleepOver;
+                // InputModel.SleepOver = reservation.SleepOver;
 
                 InputModel.PubQuizTeamName = reservation.PubQuizTeamName;
                 InputModel.PubQuizSeats = reservation.PubQuizSeats;

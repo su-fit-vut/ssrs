@@ -15,7 +15,7 @@ public class ReservationModel
     [Range(1, int.MaxValue, ErrorMessage = "Neplatný počet míst.")]
     public required int Seats { get; set; }
 
-    public bool SleepOver { get; set; } = false;
+    // public bool SleepOver { get; set; } = false;
 
     [MaxLength(32)] public string? PubQuizTeamName { get; set; }
 

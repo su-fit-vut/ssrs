@@ -28,7 +28,7 @@ public class ReservationModel
 
     [BindNever]
     public bool WantsPubQuiz =>
-        (!string.IsNullOrWhiteSpace(PubQuizTeamName) && PubQuizSeats is > 2) || PubQuizReserveSolo;
+        !string.IsNullOrWhiteSpace(PubQuizTeamName) || PubQuizReserveSolo;
 }
 
 public record ReservationOverview

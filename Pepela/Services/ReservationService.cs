@@ -475,6 +475,11 @@ public class ReservationService
         if (selectedSlotIds.Count == 0)
             return null;
 
+        if (model.WantsPubQuiz)
+        {
+            selectedSlotIds.Add(model.PubQuizReserveSolo ? PubQuizSoloTimeSlotId : PubQuizTeamsTimeSlotId);
+        }
+
         var selectedSlots = await _dbContext.TimeSlots
             .Where(ts => selectedSlotIds.Contains(ts.Id))
             .Include(ts => ts.CollidesWith)

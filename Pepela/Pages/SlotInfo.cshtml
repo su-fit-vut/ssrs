@@ -33,6 +33,13 @@
             <a class="btn btn-danger" asp-page="Cancel" asp-route-email="@reservation.Email" asp-route-token="_edit">zrušit
                 celou</a>
         </li>
+        @if (Model.Slot.ActivityId is 1 or 2 && reservation.PubQuizTeamName != null)
+        {
+            <ul>
+                <li>Jméno týmu: @reservation.PubQuizTeamName</li>
+                <li>Členů: @reservation.PubQuizSeats</li>
+            </ul>
+        }
     }
 </ul>
 

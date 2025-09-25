@@ -39,4 +39,6 @@ public record ReservationOverview
     public required bool Confirmed { get; init; }
     public required bool Cancelled { get; init; }
     public required ZonedDateTime MadeOn { get; init; }
+    public string? PubQuizTeamName { get; init; }
+    public int? PubQuizSeats { get; init; }
 }

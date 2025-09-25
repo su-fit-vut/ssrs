@@ -850,7 +850,8 @@ public class ReservationService
                     .Select(x => new ReservationOverview()
                     {
                         Email = x.Email, Seats = x.Seats, SleepOver = x.SleepOver, Cancelled = x.Cancelled,
-                        Confirmed = x.Confirmed, MadeOn = x.MadeOn.InZone(_zone)
+                        Confirmed = x.Confirmed, MadeOn = x.MadeOn.InZone(_zone),
+                        PubQuizTeamName = x.PubQuizTeamName, PubQuizSeats = x.PubQuizSeats
                     }).ToList()
                 : ImmutableList.Create<ReservationOverview>()
         };

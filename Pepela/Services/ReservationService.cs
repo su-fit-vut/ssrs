@@ -914,6 +914,7 @@ public class ReservationService
         var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
         var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
 
-        return (teamsSlots[0].AvailableSeats > 0, soloSlots[0].AvailableSeats > 0);
+        return (teamsSlots.Count > 0 && teamsSlots[0].AvailableSeats > 0, 
+            soloSlots.Count > 0 && soloSlots[0].AvailableSeats > 0);
     }
 }

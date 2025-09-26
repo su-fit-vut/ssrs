@@ -41,10 +41,8 @@ public class IndexModel : PageModel
     [BindProperty(Name = "token", SupportsGet = true)]
     public string? Token { get; set; }
 
-    private bool EditRequested => Token == "_admin";
-
-
     [BindNever] public bool EditMode { get; set; } = false;
+    [BindNever] public bool ShowAdminView { get; set; }
 
 
     public IndexModel(ReservationService reservationService, IOptionsSnapshot<SeatsOptions> seatsOptions,
@@ -131,12 +129,14 @@ public class IndexModel : PageModel
 
     private async Task InitModel(bool cache)
     {
+        ShowAdminView = await _authorizationService.AuthorizeAsync(User, "IsAdmin") is { Succeeded: true };
+
         SeatsLeft = await _reservationService.GetSeatsLeft(true);
         MaxSeats = int.Min(SeatsLeft, MaxSeats);
 
         (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability();
 
-        var activities = await _reservationService.GetSlottedActivities();
+        var activities = await _reservationService.GetSlottedActivities(ShowAdminView);
         foreach (var activity in activities)
         {
             if (activity.Id is ReservationService.PubQuizSoloActivityId or ReservationService.PubQuizTeamsActivityId)
@@ -147,8 +147,7 @@ public class IndexModel : PageModel
         if (Email != null && Token != null && InputModel.Email == Email)
         {
             ReservationEntity? reservation;
-            if (Token == "_edit" && await _authorizationService
-                    .AuthorizeAsync(User, "IsAdmin") is { Succeeded: true })
+            if (Token == "_edit" && ShowAdminView)
                 reservation = await _reservationService.GetReservationDetails(Email);
             else
                 reservation = await _reservationService.GetReservationDetails(Email, Token);

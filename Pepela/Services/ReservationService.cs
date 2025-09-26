@@ -770,7 +770,7 @@ public class ReservationService
         return left - seatsToConsume >= 0;
     }
 
-    public async Task<List<SlottedActivity>> GetSlottedActivities()
+    public async Task<List<SlottedActivity>> GetSlottedActivities(bool showStartedSlots = false)
     {
         var activities = await _dbContext.Activities
             .OrderBy(x => x.Id)
@@ -784,7 +784,7 @@ public class ReservationService
 
         foreach (var activity in activities)
         {
-            var slots = await this.GetTimeslotsForActivity(activity.Id);
+            var slots = await this.GetTimeslotsForActivity(activity.Id, showStartedSlots);
             activity.TimeSlots.AddRange(slots);
         }
 
@@ -887,14 +887,19 @@ public class ReservationService
         return await this.CancelReservation(reservation);
     }
 
-    public async Task<List<TimeSlot>> GetTimeslotsForActivity(int slottedActivityId)
+    public async Task<List<TimeSlot>> GetTimeslotsForActivity(int slottedActivityId, bool showStarted = false)
     {
         var now = SystemClock.Instance.GetCurrentInstant();
 
-        var slots = await _dbContext.TimeSlots
-            .Where(x => x.ActivityId == slottedActivityId)
-            .Where(x => x.Start > now)
-            .Include(x => x.Activity)
+        var slotsQuery = _dbContext.TimeSlots
+            .Where(x => x.ActivityId == slottedActivityId);
+
+        if (!showStarted)
+        {
+            slotsQuery = slotsQuery.Where(x => x.Start > now);
+        }
+
+        var slots = await slotsQuery.Include(x => x.Activity)
             .Include(x => x.AssociatedReservations)
             .ToListAsync();
 
@@ -914,7 +919,7 @@ public class ReservationService
         var teamsSlots = await this.GetTimeslotsForActivity(PubQuizTeamsActivityId);
         var soloSlots = await this.GetTimeslotsForActivity(PubQuizSoloActivityId);
 
-        return (teamsSlots.Count > 0 && teamsSlots[0].AvailableSeats > 0, 
+        return (teamsSlots.Count > 0 && teamsSlots[0].AvailableSeats > 0,
             soloSlots.Count > 0 && soloSlots[0].AvailableSeats > 0);
     }
 }

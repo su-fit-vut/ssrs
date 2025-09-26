@@ -8,7 +8,6 @@
 
 @{
     ViewData["Title"] = "Rezervace";
-    var isAdmin = await AuthorizationService.AuthorizeAsync(User, "IsAdmin") is { Succeeded: true };
 }
 
 <div class="row justify-content-center">
@@ -277,7 +276,6 @@
                 {
                     <p>
                         Pubkvíz už je bohužel plný.
-                        Zkus se sem občas mrknout, zda se třeba neuvolnilo nějaké místo.
                     </p>
                 }
                 else if (!Model.PubQuizTeamsAvailable && Model.PubQuizSoloAvailable)
@@ -371,7 +369,7 @@
                     <button type="submit"
                             class="btn btn-primary">@(Model.EditMode ? "Upravit rezervaci" : "Vytvořit rezervaci")</button>
 
-                    @if (isAdmin)
+                    @if (Model.ShowAdminView)
                     {
                         <button type="submit" asp-page-handler="AdminSubmit"
                                 asp-route-email="@Model.InputModel.Email" asp-route-token="_edit"
@@ -393,7 +391,7 @@
     </div>
 </div>
 
-@if (isAdmin)
+@if (Model.ShowAdminView)
 {
     <div class="row justify-content-center pb-2">
         <div class="col-10">

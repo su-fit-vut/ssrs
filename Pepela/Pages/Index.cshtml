@@ -36,7 +36,8 @@
                         </p>
                         <span>
                             Nepotvrzené rezervace jsou platné pouze @SeatsOptions.Value.UnconfirmedValidMinutes minut od založení.<br>
-                            Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou (stará se tím  <b>automaticky zruší</b>, o&nbsp;čemž ti přijde e-mail).<br>
+                            Dokud není rezervace potvrzená, můžeš na tento e-mail založit novou (stará se tím
+                            <b>automaticky zruší</b>, o&nbsp;čemž ti přijde e-mail).<br>
                             Rezervaci můžeš kdykoliv zrušit kliknutím na odkaz v&nbsp;e-mailu.
                         </span>
 
@@ -70,25 +71,9 @@
 
                         break;
                     case ReservationAttemptResultCode.TimeslotError:
-                        var slotId = Model.Result?.CollidingTimeSlot?.Id ?? -1;
-                        if (slotId == ReservationService.PubQuizTeamsTimeSlotId)
-                        {
-                            <span>
-                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro další týmy.
-                            </span>
-                        }
-                        else if (slotId == ReservationService.PubQuizSoloTimeSlotId)
-                        {
-                            <span>
-                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro lidi bez týmu.
-                            </span>
-                        }
-                        else
-                        {
-                            <span>
+                        <span>
                             Ve zvoleném časovém slotu pro aktivitu „@Model.Result?.CollidingTimeSlot?.ActivityName“ už bohužel není místo.
                         </span>
-                        }
 
                         break;
                     case ReservationAttemptResultCode.TimeslotNotReservable:
@@ -158,7 +143,8 @@
         {
             <h3 class="text-danger text-center">⚠️ Kapacita naplněna ⚠️</h3>
             <p>
-                Děkujeme za zájem, vypadá to, že akce bude plná. Pokud jste nestihli chytnout své místo, mrkněte sem
+                Děkujeme za zájem, vypadá to, že akce bude plná. Pokud jste nestihli chytnout své
+                místo, mrkněte sem
                 ještě před začátkem, třeba někdo rezervaci zruší.
             </p>
         }
@@ -175,19 +161,28 @@
             <h3 class="text-danger text-center">⚠️ Zbývá posledních @Model.SeatsLeft míst ⚠️</h3>
         }
 
-        <h2 class="mb-4 text-center">Noc na FITu – přihlašovací formulář</h2>
+        <h2 class="mb-4 text-center">Start@FIT 2026 – rezervace aktivit</h2>
 
         <p>
-            <a href="https://su.fit.vut.cz/kachna/events/168">Noc na FITu</a> proběhne 
-            <span class="fw-bold">v&nbsp;pátek 26. 9. od 18:00</span> v&nbsp;prostorách FIT.
-            <br/>Účast je zdarma, pro zjištění zájmu však prosíme o&nbsp;rezervaci místa.
-            <br/>Bez registrace není možné zúčastnit se únikovek a&nbsp;pubkvízu.
-            <br/>Nelze rezervovat více aktivit ve stejném čase.
-            <br/>Po odeslání formuláře ti přijde e-mail s&nbsp;odkazem na potvrzení rezervace. Link je platný 10 minut.
+            Na tomto webu si můžeš zarezervovat místo na prohlídkách, turnajích a&nbsp;v&nbsp;pubkvízu
+            QuackQuiz.
+        </p>
+        <p>
+            <span class="fw-bold">Pozor na kolize s&nbsp;programem</span> pro tvou skupinu
+            (podle příjmení)! U&nbsp;většiny aktivit je poznámka „pref. příjm.“ (zkratka pro „preferovaná příjmení“)
+            – pokud se budou při registraci všichni soustředit jen na termín, který je vyhrazen pro jejich příjmení,
+            budou mít všichni férovou šanci se na nějaký termín dostat. 
+            Ověř si program na <a href="https://www.startatfit.cz/" target="_blank">webu akce</a>.
+        </p>
+        <p>
+            Nelze rezervovat více aktivit ve stejném čase.
+            <br/>Po odeslání formuláře ti přijde e-mail s&nbsp;odkazem na potvrzení rezervace. Link
+            je platný 10 minut.
             <br/>Rezervace je platná až po potvrzení!
         </p>
         <p class="fw-bold">
-            Pokud se ti změní plány a&nbsp;na nějakou aktivitu nepřijdeš, prosím, zruš svou rezervaci (linkem v&nbsp;mailu).
+            Pokud se ti změní plány a&nbsp;na nějakou aktivitu nepřijdeš, prosím, zruš svou
+            rezervaci (linkem v&nbsp;mailu).
         </p>
 
         @if (Model.SeatsLeft != 0)
@@ -198,12 +193,14 @@
                         <label for="inputEmail" class="form-label">E-mail:</label>
                         @if (Model.EditMode)
                         {
-                            <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email"
+                            <input type="email" class="form-control" id="inputEmail"
+                                   asp-for="InputModel.Email"
                                    readonly="readonly">
                         }
                         else
                         {
-                            <input type="email" class="form-control" id="inputEmail" asp-for="InputModel.Email"
+                            <input type="email" class="form-control" id="inputEmail"
+                                   asp-for="InputModel.Email"
                                    required="required">
                         }
                     </div>
@@ -214,13 +211,15 @@
                             <label for="inputSeats" class="form-label">Počet míst:</label>
                             @if (Model.EditMode)
                             {
-                                <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
+                                <input type="number" min="1" max="@Model.MaxSeats"
+                                       asp-for="InputModel.Seats"
                                        class="form-control" id="inputSeats" readonly="readonly">
                             }
                             else
                             {
-                                <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
-                                       class="form-control" id="inputSeats" required="required">    
+                                <input type="number" min="1" max="@Model.MaxSeats"
+                                       asp-for="InputModel.Seats"
+                                       class="form-control" id="inputSeats" required="required">
                             }
                         </div>
                     }
@@ -229,110 +228,13 @@
                         <input type="hidden" asp-for="InputModel.Seats" value="1"></input>
                     }
                 </div>
-                
+
                 @*<div class="form-check mb-3">
                     <input type="checkbox" class="form-check-input" id="addSleepover" asp-for="InputModel.SleepOver">
                     <label class="form-check-label" for="addSleepover">
                         Chci na FITu přespat
                     </label>
                 </div>*@
-                <hr/>
-                
-                <h3>Pubkvíz</h3>
-                @if (Model.EditMode)
-                {
-                    if (Model.InputModel.PubQuizReserveSolo)
-                    {
-                        <p>
-                            Máš zarezervované sólo místo na pubkvízu.
-                        </p>
-                        <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
-                            Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.
-                        </p>
-                    }
-                    else if (Model.InputModel.PubQuizTeamName != null)
-                    {
-                        <p>
-                            Jméno týmu: <b>@Model.InputModel.PubQuizTeamName</b><br/>
-                            Počet členů: <b>@Model.InputModel.PubQuizSeats</b>
-                        </p>
-                        <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
-                            Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
-                            Pokud se jen změnil počet lidí, nemusíš nic dělat.
-                        </p>
-                    }
-                    else
-                    {
-                        <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
-                            Pokud se chceš zúčastnit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
-                        </p>  
-                    }
-
-                }
-                else if (!Model.PubQuizTeamsAvailable && !Model.PubQuizSoloAvailable)
-                {
-                    <p>
-                        Pubkvíz už je bohužel plný.
-                    </p>
-                }
-                else if (!Model.PubQuizTeamsAvailable && Model.PubQuizSoloAvailable)
-                {
-                    <p>
-                        Pubkvíz v&nbsp;<a href="https://www.fit.vut.cz/fit/map/1/.cs?show=P108&big=1" target="_blank">P108</a> proběhne od <b>18:00</b> do cca <b>21:00</b>.
-                    </p>
-                    <p>
-                        Do pubkvízu už je možné rezervovat pouze místa pro jednotlivce (bez týmu).
-                        Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
-                    </p>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
-                        <label class="form-check-label" for="reserveQuizSoloSeat">
-                            Chci zarezervovat <b>sólo</b> místo na pubkvízu
-                        </label>
-                    </div>
-                }
-                else
-                {
-                    <p>
-                        Pubkvíz v&nbsp;<a href="https://www.fit.vut.cz/fit/map/1/.cs?show=P108&big=1" target="_blank">P108</a> proběhne od <b>18:00</b> do cca <b>21:00</b>.
-                    </p>
-                    <p>
-                        Pro účast na pubkvízu si předem domluv 
-                        <b>tým @SeatsOptions.Value.MinPubQuizTeamSize–@SeatsOptions.Value.MaxPubQuizTeamSize lidí</b>. 
-                        Níže vyplň název a&nbsp;velikost týmu.
-                        <br/><b>Pubkvíz rezervuje pouze jeden z&nbsp;týmu!</b>
-                    </p>
-                    @if (Model.PubQuizSoloAvailable)
-                    {
-                        <p>
-                            Pokud nemáš tým, můžeš si zarezervovat <b>sólo místo</b>.
-                            Na místě pak poskládáme jeden tým ze všech, kteří si toto místo zaregistrovali.<br/>
-                            Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
-                        </p>
-                    }
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
-                        <label class="form-check-label" for="reserveQuizSoloSeat">
-                            Chci zarezervovat <b>sólo</b> místo na pubkvízu
-                        </label>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-8">
-                            <label for="inputQuizTeamName" class="form-label">Jméno týmu:</label>
-                            <input type="text" class="form-control pubquiz-team-input"
-                                   id="inputQuizTeamName" asp-for="InputModel.PubQuizTeamName">
-                        </div>
-                        <div class="col-4">
-                            <label for="inputQuizTeamSeats" class="form-label">Počet členů:</label>
-                            <input type="number" class="form-control pubquiz-team-input" min="@Model.MinPubQuizTeamSize"
-                                   max="@SeatsOptions.Value.MaxPubQuizTeamSize"
-                                   id="inputQuizTeamSeats" asp-for="InputModel.PubQuizSeats">
-                        </div>
-                    </div>
-                }
                 <hr/>
 
                 @foreach (var activity in Model.Slots.Values)
@@ -351,6 +253,7 @@
                         {
                             @Html.Raw(activity.Description)
                         }
+
                         <div class="container p-0">
                             <div class="row">
                                 @foreach (var slot in activity.TimeSlots)
@@ -377,7 +280,8 @@
 
                         @if (Model.EditMode)
                         {
-                            <a asp-page="Cancel" asp-route-email="@Model.Email" asp-route-token="_edit"
+                            <a asp-page="Cancel" asp-route-email="@Model.Email"
+                               asp-route-token="_edit"
                                class="btn btn-danger">Zrušit rezervaci</a>
                         }
                     }
@@ -385,7 +289,8 @@
             </form>
 
             <p>
-                Do mailu ti přijde odkaz na potvrzení, úpravu a&nbsp;na zrušení rezervace. Nezapomeň rezervaci potvrdit!
+                Do mailu ti přijde odkaz na potvrzení, úpravu a&nbsp;na zrušení rezervace. Nezapomeň
+                rezervaci potvrdit!
             </p>
         }
     </div>
@@ -396,7 +301,8 @@
     <div class="row justify-content-center pb-2">
         <div class="col-10">
             <a asp-page="Admin" class="btn btn-outline-secondary">Admin</a>
-            <a asp-page="Admin" asp-page-handler="Logout" class="btn btn-outline-secondary">Odhlásit</a>
+            <a asp-page="Admin" asp-page-handler="Logout"
+               class="btn btn-outline-secondary">Odhlásit</a>
         </div>
     </div>
 }

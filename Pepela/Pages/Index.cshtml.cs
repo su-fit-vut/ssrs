@@ -24,17 +24,6 @@ public class IndexModel : PageModel
     [BindNever] public int SeatsLeft { get; set; }
     [BindNever] public Dictionary<int, SlottedActivity> Slots { get; set; } = new();
 
-    #region PubQuiz Properties
-
-    [BindNever] public bool PubQuizTeamsAvailable { get; set; }
-    [BindNever] public bool PubQuizSoloAvailable { get; set; }
-
-    [BindNever]
-    public int MinPubQuizTeamSize =>
-        PubQuizSoloAvailable ? 1 : (PubQuizTeamsAvailable ? _seatsOptions.Value.MinPubQuizTeamSize : 2);
-
-    #endregion
-
     [BindProperty(Name = "email", SupportsGet = true)]
     public string? Email { get; set; }
 
@@ -73,30 +62,6 @@ public class IndexModel : PageModel
             ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.Seats)}",
                 "Neplatný počet rezervovaných míst.");
 
-        #region PubQuiz validation
-
-        var pubQuizOk = true;
-        if (InputModel is { WantsPubQuiz: true, PubQuizReserveSolo: false })
-        {
-            if (InputModel.PubQuizSeats is null)
-                pubQuizOk = false;
-
-            if (InputModel.PubQuizSeats < MinPubQuizTeamSize
-                || InputModel.PubQuizSeats > _seatsOptions.Value.MaxPubQuizTeamSize)
-                pubQuizOk = false;
-        }
-
-        if (!pubQuizOk)
-            ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
-                "Neplatný počet členů týmu pro pubkvíz.");
-
-        if (string.IsNullOrWhiteSpace(InputModel.PubQuizTeamName) && InputModel.PubQuizSeats is not (null or < 2)
-                                                                  && !InputModel.PubQuizReserveSolo)
-            ModelState.AddModelError($"{nameof(InputModel)}.{nameof(InputModel.PubQuizSeats)}",
-                "Musíte zadat jméno týmu pro pubkvíz.");
-
-        #endregion
-
         if (!ModelState.IsValid)
         {
             await this.InitModel(true);
@@ -134,13 +99,10 @@ public class IndexModel : PageModel
         SeatsLeft = await _reservationService.GetSeatsLeft(true);
         MaxSeats = int.Min(SeatsLeft, MaxSeats);
 
-        (PubQuizTeamsAvailable, PubQuizSoloAvailable) = await _reservationService.GetPubQuizAvailability();
 
         var activities = await _reservationService.GetSlottedActivities(ShowAdminView);
         foreach (var activity in activities)
         {
-            if (activity.Id is ReservationService.PubQuizSoloActivityId or ReservationService.PubQuizTeamsActivityId)
-                continue;
             Slots.Add(activity.Id, activity);
         }
 
@@ -156,12 +118,6 @@ public class IndexModel : PageModel
             {
                 EditMode = true;
                 InputModel.Seats = reservation.Seats;
-                // InputModel.SleepOver = reservation.SleepOver;
-
-                InputModel.PubQuizTeamName = reservation.PubQuizTeamName;
-                InputModel.PubQuizSeats = reservation.PubQuizSeats;
-                InputModel.PubQuizReserveSolo = reservation.AssociatedTimeSlots
-                    .Any(x => x.Id == ReservationService.PubQuizSoloActivityId);
 
                 foreach (var slot in reservation.AssociatedTimeSlots)
                 {

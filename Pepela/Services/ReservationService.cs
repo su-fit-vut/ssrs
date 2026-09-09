@@ -22,10 +22,10 @@ public class ReservationService
     private const string SeatsLeftCacheKey = "SeatsLeft";
     private const string TimeSlotSeatsLeftCacheKey = "TimeSlot.{0}.SeatsLeft";
 
-    public const int PubQuizTeamsActivityId = 1;
-    public const int PubQuizSoloActivityId = 2;
-    public const int PubQuizTeamsTimeSlotId = 1;
-    public const int PubQuizSoloTimeSlotId = 2;
+    public const int PubQuizTeamsActivityId = -1;
+    public const int PubQuizSoloActivityId = -1;
+    public const int PubQuizTeamsTimeSlotId = -1;
+    public const int PubQuizSoloTimeSlotId = -1;
 
     private readonly AppDbContext _dbContext;
     private readonly EmailService _emailService;

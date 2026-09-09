@@ -15,9 +15,9 @@ namespace Pepela.Services;
 
 public class EmailService
 {
-    private const string EventName = "Noc na FITu";
-    private const string EventDate = "26. 9. 2025";
-    private const string ContactEmail = "xobrale00@stud.fit.vut.cz";
+    private const string EventName = "Start@FIT26";
+    private const string EventDate = "10.–13. 9. 2026";
+    private const string ContactEmail = "iondryas@fit.vut.cz";
     
     #region Messages
 
@@ -33,7 +33,7 @@ public class EmailService
 
     private const string ConfirmationMail
         = $$"""
-          <h2>Potvrď rezervaci místa</h2>
+          <h2>Potvrď rezervaci</h2>
           <p style="font-weight: bold;">{{EventName}}, {{EventDate}}</p>
           <p>
               Díky za rezervaci! Potvrď ji prosím kliknutím na odkaz:<br>
@@ -95,38 +95,7 @@ public class EmailService
           """;
 
     private const string ReminderMail
-        = $$"""
-          <h2>{{EventName}}</h2>
-          <p style="font-weight: bold;">{{EventDate}}</p>
-          <p>
-              Ahoj! Už v&nbsp;pátek nás čeká Noc na FITu.
-          </p>
-
-          <h3>Organizační informace</h3>
-          <p>
-              Celá akce bude začínat cca v&nbsp;18 hodin spolu s <a href="https://www.nocvedcu.cz/misto/453-fakulta-informacnich-technologii">Nocí vědců</a>.
-              U&nbsp;vstupu se nemusíš nijak prokazovat a můžeš přijít kudy chceš, akce probíhá po celé škole. Veškeré potřebné informace
-               včetně programu se dozvíš na <a href="https://www.instagram.com/sufitvut">instagramu SU</a>.
-          </p>
-          <p>
-              Máš zarezervováno {0}. Pokud víš, že nedojdeš, zruš prosím co nejdřív svou rezervaci kliknutím <a href="{1}">na tento odkaz</a>.
-          </p>
-          {2}
-          <p>
-              Noc na FITu se bude odehrávat v&nbsp;areálu FIT VUT, ve kterém se nachází také koleje, dopřejme tedy prosím jejich
-              obyvatelům v noci klid a&nbsp;umírněme zvukové projevy. Také připomínáme, že je zakázáno kouřit před vchodem do fakulty
-               (jakož i&nbsp;v&nbsp;celém areálu fakulty), to platí i&nbsp;pro elektronické cigarety a&nbsp;obdobné záležitosti.
-               V&nbsp;případě potřeby proto prosím využijte 
-               <a href="https://maps.app.goo.gl/NRwpXP4ReYYpKEHi7">prostor před brankou</a>.
-          </p>
-          <p>
-              <br>Studentská unie FIT VUT v Brně
-              <br><a href="https://su.fit.vut.cz">https://su.fit.vut.cz</a>
-              <br>s případnými dotazy se ozvi na <a href="mailto:{{ContactEmail}}">{{ContactEmail}}</a>
-                  nebo pomocí <a href="https://su.fit.vut.cz/kontakt">našeho kontaktního formuláře</a>
-          </p>
-          """;
-
+        = "";
     #endregion
 
     private readonly IOptionsSnapshot<SeatsOptions> _seatsOptions;

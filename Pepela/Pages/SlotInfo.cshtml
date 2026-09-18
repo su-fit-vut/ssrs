@@ -19,6 +19,12 @@
         @:Poznámka: @Html.Raw(Model.Slot.Note)
     }
 </p>
+@if (Model.Slot.ActivityId is 1)
+{
+    <p>
+        Celkem lidí v týmech: @Model.Slot.Reservations.Where(x => x is { Confirmed: true, Cancelled: false }).Sum(x => x.PubQuizSeats)
+    </p>
+}
 
 <h3>Potvrzené rezervace</h3>
 <ul>

@@ -16,7 +16,7 @@ namespace Pepela.Services;
 public class EmailService
 {
     private const string EventName = "Noc na FITu";
-    private const string EventDate = "26. 9. 2025";
+    private const string EventDate = "25. 9. 2026";
     private const string ContactEmail = "xobrale00@stud.fit.vut.cz";
     
     #region Messages
@@ -104,7 +104,7 @@ public class EmailService
 
           <h3>Organizační informace</h3>
           <p>
-              Celá akce bude začínat cca v&nbsp;18 hodin spolu s <a href="https://www.nocvedcu.cz/misto/453-fakulta-informacnich-technologii">Nocí vědců</a>.
+              Celá akce bude začínat cca v&nbsp;16 hodin spolu s <a href="https://www.nocvedy.cz/misto/453-fakulta-informacnich-technologii">Nocí vědy</a>.
               U&nbsp;vstupu se nemusíš nijak prokazovat a můžeš přijít kudy chceš, akce probíhá po celé škole. Veškeré potřebné informace
                včetně programu se dozvíš na <a href="https://www.instagram.com/sufitvut">instagramu SU</a>.
           </p>

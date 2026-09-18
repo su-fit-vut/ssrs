@@ -65,7 +65,7 @@
                                     @:K rezervaci zbývá už jen @Model.SeatsLeft míst.
                                 }
                             }
-                            Je ale možné, že se počet míst ještě bude navyšovat. Sleduj sociální sítě Studentské unie nebo FIT discord!
+                            Je ale možné, že se počet míst ještě bude navyšovat. Sleduj instagram Studentské unie nebo FIT discord!
                         </span>
 
                         break;
@@ -74,13 +74,13 @@
                         if (slotId == ReservationService.PubQuizTeamsTimeSlotId)
                         {
                             <span>
-                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro další týmy.
+                                Bohužel pro QuackQuiz už nejsou k&nbsp;dispozici místa pro další týmy.
                             </span>
                         }
                         else if (slotId == ReservationService.PubQuizSoloTimeSlotId)
                         {
                             <span>
-                                Bohužel už nejsou v pubkvízu k&nbsp;dispozici místa pro lidi bez týmu.
+                                Bohužel pro QuackQuiz už nejsou k&nbsp;dispozici místa pro lidi bez týmu.
                             </span>
                         }
                         else
@@ -178,12 +178,12 @@
         <h2 class="mb-4 text-center">Noc na FITu – přihlašovací formulář</h2>
 
         <p>
-            <a href="https://su.fit.vut.cz/kachna/events/168">Noc na FITu</a> proběhne 
-            <span class="fw-bold">v&nbsp;pátek 26. 9. od 18:00</span> v&nbsp;prostorách FIT.
+            <a href="https://su.fit.vut.cz/kachna/events/216">Noc na FITu</a> proběhne 
+            <span class="fw-bold">v&nbsp;pátek 25. 9. 2026 od 16:00</span> v&nbsp;prostorách FIT.
             <br/>Účast je zdarma, pro zjištění zájmu však prosíme o&nbsp;rezervaci místa.
-            <br/>Bez registrace není možné zúčastnit se únikovek a&nbsp;pubkvízu.
+            <br/>Bez registrace není možné zúčastnit se únikovek a&nbsp;pubkvízu QuackQuiz.
             <br/>Nelze rezervovat více aktivit ve stejném čase.
-            <br/>Po odeslání formuláře ti přijde e-mail s&nbsp;odkazem na potvrzení rezervace. Link je platný 10 minut.
+            <br/>Po odeslání formuláře ti přijde e-mail s&nbsp;odkazem na potvrzení rezervace, který je platný 10 minut.
             <br/>Rezervace je platná až po potvrzení!
         </p>
         <p class="fw-bold">
@@ -211,7 +211,7 @@
                     @if (Model.MaxSeats > 1)
                     {
                         <div class="col-4">
-                            <label for="inputSeats" class="form-label">Počet míst:</label>
+                            <label for="inputSeats" class="form-label">Počet osob v&nbsp;rezervaci:</label>
                             @if (Model.EditMode)
                             {
                                 <input type="number" min="1" max="@Model.MaxSeats" asp-for="InputModel.Seats"
@@ -238,16 +238,26 @@
                 </div>*@
                 <hr/>
                 
-                <h3>Pubkvíz</h3>
+                <h3>Pubkvíz QuackQuiz™</h3>
+                <p>
+                    Milí účastníci Noci na FITe,<br/>
+                    dovoľte nám predstaviť Vám QuackQuiz™, pravidelný mesačný pubkvíz pre študentov našej univerzity a&nbsp;ich priateľov v&nbsp;našom študentskom klube U&nbsp;Kachničky, vždy a&nbsp;pre všetkých úplne zadarmo!<br/>
+                    V&nbsp;tento večer radi potrápime či potešíme našimi šesťdesiatjeden otázkami zoskupenými do dvanástich najrôznejších kategórií aj širšiu verejnosť.<br/> 
+                    Čaká Vás kopa zábavy, netradičné pseudo-vzdelávanie, super atmosféra a&nbsp;sympatické ceny.
+                </p>
+                <p>
+                    Pubkvíz QuackQuiz v&nbsp;<a href="https://www.fit.vut.cz/fit/map/1/.cs?show=R212&big=1" target="_blank">klube U&nbsp;Kachničky</a> sa koná od <b>17:30</b> do cca <b>20:30</b>.
+                </p>
+                
                 @if (Model.EditMode)
                 {
                     if (Model.InputModel.PubQuizReserveSolo)
                     {
                         <p>
-                            Máš zarezervované sólo místo na pubkvízu.
+                            Máš zarezervované sólo místo na QuackQuizu.
                         </p>
                         <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Účast na QuackQuizu nelze dodatečně měnit.<br/>
                             Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.
                         </p>
                     }
@@ -258,7 +268,7 @@
                             Počet členů: <b>@Model.InputModel.PubQuizSeats</b>
                         </p>
                         <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Účast na QuackQuizu nelze dodatečně měnit.<br/>
                             Pokud chceš svou účast zrušit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
                             Pokud se jen změnil počet lidí, nemusíš nic dělat.
                         </p>
@@ -266,7 +276,7 @@
                     else
                     {
                         <p>
-                            Účast na pubkvízu nelze dodatečně měnit.<br/>
+                            Účast na QuackQuizu nelze dodatečně měnit.<br/>
                             Pokud se chceš zúčastnit, zruš prosím celou rezervaci a&nbsp;vytvoř novou.<br/>
                         </p>  
                     }
@@ -275,17 +285,14 @@
                 else if (!Model.PubQuizTeamsAvailable && !Model.PubQuizSoloAvailable)
                 {
                     <p>
-                        Pubkvíz už je bohužel plný.
+                        QuackQuiz už je bohužel plný.
                     </p>
                 }
                 else if (!Model.PubQuizTeamsAvailable && Model.PubQuizSoloAvailable)
                 {
                     <p>
-                        Pubkvíz v&nbsp;<a href="https://www.fit.vut.cz/fit/map/1/.cs?show=P108&big=1" target="_blank">P108</a> proběhne od <b>18:00</b> do cca <b>21:00</b>.
-                    </p>
-                    <p>
                         Do pubkvízu už je možné rezervovat pouze místa pro jednotlivce (bez týmu).
-                        Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
+                        Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše!
                     </p>
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
@@ -297,28 +304,11 @@
                 else
                 {
                     <p>
-                        Pubkvíz v&nbsp;<a href="https://www.fit.vut.cz/fit/map/1/.cs?show=P108&big=1" target="_blank">P108</a> proběhne od <b>18:00</b> do cca <b>21:00</b>.
-                    </p>
-                    <p>
                         Pro účast na pubkvízu si předem domluv 
                         <b>tým @SeatsOptions.Value.MinPubQuizTeamSize–@SeatsOptions.Value.MaxPubQuizTeamSize lidí</b>. 
-                        Níže vyplň název a&nbsp;velikost týmu.
-                        <br/><b>Pubkvíz rezervuje pouze jeden z&nbsp;týmu!</b>
+                        Níže vyplň název a&nbsp;velikost týmu (není závislá na počtu osob v&nbsp;rezervaci uvedeném výše).
+                        <br/><b>Pubkvíz rezervuje pouze jeden člen z&nbsp;týmu!</b>
                     </p>
-                    @if (Model.PubQuizSoloAvailable)
-                    {
-                        <p>
-                            Pokud nemáš tým, můžeš si zarezervovat <b>sólo místo</b>.
-                            Na místě pak poskládáme jeden tým ze všech, kteří si toto místo zaregistrovali.<br/>
-                            Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci uvedený výše nebo na počet členů vyplněný níže!
-                        </p>
-                    }
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
-                        <label class="form-check-label" for="reserveQuizSoloSeat">
-                            Chci zarezervovat <b>sólo</b> místo na pubkvízu
-                        </label>
-                    </div>
                     <div class="row mb-3">
                         <div class="col-8">
                             <label for="inputQuizTeamName" class="form-label">Jméno týmu:</label>
@@ -332,6 +322,26 @@
                                    id="inputQuizTeamSeats" asp-for="InputModel.PubQuizSeats">
                         </div>
                     </div>
+                    @if (Model.PubQuizSoloAvailable)
+                    {
+                        <p>
+                            Pokud nemáš tým, můžeš si zarezervovat <b>sólo místo</b>.
+                            Na místě pak poskládáme týmy ze všech, kteří si toto místo zaregistrovali.<br/>
+                            Pozor, při zaškrtnutí bude zarezervováno vždy jen jedno sólo místo nehledě na počet osob v&nbsp;rezervaci nebo v&nbsp;týmu uvedený výše!
+                        </p>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="reserveQuizSoloSeat" asp-for="InputModel.PubQuizReserveSolo">
+                            <label class="form-check-label" for="reserveQuizSoloSeat">
+                                Chci zarezervovat <b>sólo</b> místo na pubkvízu
+                            </label>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>
+                            Pokud nemáš tým, bohužel se nedá zarezervovat sólo místo.
+                        </p>
+                    }
                 }
                 <hr/>
 
